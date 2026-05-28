@@ -1,0 +1,91 @@
+{
+  "name": "sadok",
+  "version": "1.0.54",
+  "description": "Система управління дитячим садком",
+  "main": "main.js",
+  "scripts": {
+    "start": "node scripts/start-electron.js",
+    "dev": "concurrently -k -p \"[{name}]\" -n \"SERVER,CLIENT,ELECTRON\" -c \"yellow,blue,green\" \"npm run dev:server\" \"npm run dev:client\" \"wait-on http://127.0.0.1:5173 http://127.0.0.1:3000/api/health && npm run start\"",
+    "dev:server": "cd apps/server && npm run dev",
+    "predev:server": "cd apps/server && npm run push",
+    "dev:client": "cd apps/client && npm run dev",
+    "db:init": "npm run predev:server && cd apps/server && npx tsx src/db/seed.ts",
+    "db:menu-test": "cd apps/server && npm run seed:menu-test",
+    "db:menu-edge": "cd apps/server && npm run seed:menu-edge",
+    "build:client": "cd apps/client && npm run build",
+    "build:server": "cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js",
+    "build": "npm run build:client && npm run build:server",
+    "dist:win": "npm run build && electron-builder --win nsis",
+    "install:all": "npm install && cd apps/client && npm install && cd ../server && npm install",
+    "clean:portable": "node scripts/clean-portable.js",
+    "version:patch": "node scripts/bump-version.js patch",
+    "version:minor": "node scripts/bump-version.js minor",
+    "version:major": "node scripts/bump-version.js major",
+    "changelog:new": "node scripts/changelog-new.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "electron": "^41.2.1",
+    "electron-builder": "^26.0.12",
+    "electron-is-dev": "^3.0.1",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "ua.osipix.sadok",
+    "productName": "SADOK",
+    "directories": {
+      "output": "Install",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "apps/client/dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "server-runtime/dist",
+        "to": "server/dist"
+      },
+      {
+        "from": "server-runtime/node_modules",
+        "to": "server/node_modules"
+      },
+      {
+        "from": "server-runtime/package.json",
+        "to": "server/package.json"
+      },
+      {
+        "from": "server-runtime/package-lock.json",
+        "to": "server/package-lock.json"
+      },
+      {
+        "from": "apps/server/sqlite.db",
+        "to": "server-template/sqlite.db"
+      }
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SADOK",
+      "include": "build/installer.nsh"
+    }
+  }
+}
