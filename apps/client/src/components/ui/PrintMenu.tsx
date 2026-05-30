@@ -7,13 +7,16 @@ interface ProductBreakdownRow {
   unit: string;
   grossQuantity0_4: number;
   grossQuantity5_7: number;
+  grossQuantityEmployees?: number;
   netQuantity0_4: number;
   netQuantity5_7: number;
+  netQuantityEmployees?: number;
   totalGrossQuantity: number;
   totalNetQuantity: number;
   unitPrice: number;
   cost0_4: number;
   cost5_7: number;
+  costEmployees?: number;
   totalCost: number;
 }
 
@@ -25,11 +28,13 @@ interface MenuItemPrintRow {
   defaultOutputWeight: number;
   outputWeight0_4?: number | null;
   outputWeight5_7?: number | null;
+  outputWeightEmployees?: number | null;
   hasAdjustments: boolean;
   adjustmentsCount: number;
   productBreakdown: ProductBreakdownRow[];
   cost0_4: number;
   cost5_7: number;
+  costEmployees?: number;
 }
 
 interface PrintMenuProps {
@@ -39,16 +44,20 @@ interface PrintMenuProps {
     summaryNeeds: ProductBreakdownRow[];
     totals: {
       totalChildren: number;
+      totalEmployees?: number;
       costPerChild0_4: number;
       costPerChild5_7: number;
+      costPerEmployee?: number;
       totalCost0_4: number;
       totalCost5_7: number;
+      totalCostEmployees?: number;
       totalCostAll: number;
     };
   };
   type: 'parents' | 'kitchen' | 'requirement';
   settings?: any;
 }
+
 
 const mealOrder = ['breakfast', 'lunch', 'snack', 'dinner'];
 
@@ -104,6 +113,7 @@ const PrintMenu: React.FC<PrintMenuProps> = ({ data, type, settings }) => {
         recipeName: item.recipeName,
         outputWeight0_4: item.outputWeight0_4 || item.defaultOutputWeight,
         outputWeight5_7: item.outputWeight5_7 || item.defaultOutputWeight,
+        outputWeightEmployees: item.outputWeightEmployees || item.defaultOutputWeight,
       }))
     );
 
@@ -134,9 +144,9 @@ const PrintMenu: React.FC<PrintMenuProps> = ({ data, type, settings }) => {
               <td className={`${tdClass} font-bold`} colSpan={1}>Дата: {dateStr}</td>
             </tr>
             <tr>
-              <td className={`${tdClass} font-bold`} colSpan={2}>Діти 0-4: {totalChildren0_4}</td>
-              <td className={`${tdClass} font-bold`} colSpan={2}>Діти 5-7: {totalChildren5_7}</td>
-              <td className={`${tdClass} font-bold`} colSpan={allMenuRecipes.length + 1 - 3}>Усього вихованців: {totals.totalChildren}</td>
+              <td className={`${tdClass} font-bold`} colSpan={2}>Діти 0-4: {totalChildren0_4} | Діти 5-7: {totalChildren5_7}</td>
+              <td className={`${tdClass} font-bold`} colSpan={2}>Працівники: {menu.employeesCount || 0}</td>
+              <td className={`${tdClass} font-bold`} colSpan={allMenuRecipes.length + 1 - 3}>Усього на харчуванні: {totals.totalChildren + (totals.totalEmployees || 0)}</td>
               <td className={`${tdClass} font-bold`} colSpan={1}>Статус: {menu.isConfirmed ? 'Підтверджено' : 'Чернетка'}</td>
             </tr>
           </tbody>
@@ -158,7 +168,7 @@ const PrintMenu: React.FC<PrintMenuProps> = ({ data, type, settings }) => {
                   <div className="font-bold text-gray-800">{recipe.mealLabel}</div>
                   <div className="truncate" title={recipe.recipeName}>{recipe.recipeName}</div>
                   <div className="text-[7px] text-gray-500 mt-0.5">
-                    Вих: {recipe.outputWeight0_4}/{recipe.outputWeight5_7}г
+                    Вих: {recipe.outputWeight0_4}/{recipe.outputWeight5_7}{recipe.outputWeightEmployees ? `/${recipe.outputWeightEmployees}` : ''}г
                   </div>
                 </th>
               ))}
@@ -253,6 +263,16 @@ const PrintMenu: React.FC<PrintMenuProps> = ({ data, type, settings }) => {
               <td className={tdCenterClass}>{totalChildren0_4}</td>
               <td className={tdCenterClass}>{totalChildren5_7}</td>
               <td className={tdCenterClass}>{totals.totalChildren}</td>
+            </tr>
+            <tr>
+              <td className={tdClass}>Кількість працівників</td>
+              <td className={tdCenterClass} colSpan={2}>—</td>
+              <td className={tdCenterClass}>{menu.employeesCount || 0}</td>
+            </tr>
+            <tr>
+              <td className={`${tdClass} font-bold`}>Усього осіб на харчуванні</td>
+              <td className={tdCenterClass} colSpan={2}>—</td>
+              <td className={`${tdCenterClass} font-bold`}>{totals.totalChildren + (totals.totalEmployees || 0)}</td>
             </tr>
             <tr>
               <td className={tdClass}>Кількість страв у меню</td>
@@ -408,22 +428,31 @@ const PrintMenu: React.FC<PrintMenuProps> = ({ data, type, settings }) => {
         </thead>
         <tbody>
           <tr>
-            <td className={tdClass}>Кількість дітей</td>
+            <td className={tdClass}>Кількість дітей / працівників</td>
             <td className={tdRightClass}>{totalChildren0_4}</td>
             <td className={tdRightClass}>{totalChildren5_7}</td>
-            <td className={tdRightClass}>{totals.totalChildren}</td>
+            <td className={tdRightClass}>
+              Діти: {totals.totalChildren} | Персонал: {totals.totalEmployees || 0}
+            </td>
           </tr>
           <tr>
-            <td className={tdClass}>Собівартість на 1 дитину</td>
+            <td className={tdClass}>Собівартість на 1 особу</td>
             <td className={tdRightClass}>{formatMoney(totals.costPerChild0_4)}</td>
             <td className={tdRightClass}>{formatMoney(totals.costPerChild5_7)}</td>
-            <td className={tdRightClass}>денний показник</td>
+            <td className={tdRightClass}>
+              Персонал: {formatMoney(totals.costPerEmployee || 0)}
+            </td>
           </tr>
           <tr>
-            <td className={tdClass}>Сума по групі</td>
+            <td className={tdClass}>Сума витрат за день</td>
             <td className={tdRightClass}>{formatMoney(totals.totalCost0_4)}</td>
             <td className={tdRightClass}>{formatMoney(totals.totalCost5_7)}</td>
-            <td className={tdRightClass}>{formatMoney(totals.totalCostAll)}</td>
+            <td className={`${tdRightClass} font-bold bg-gray-50`}>
+              {formatMoney(totals.totalCostAll)}
+              <div className="text-[8px] font-normal text-gray-500 mt-0.5">
+                (в т.ч. персонал: {formatMoney(totals.totalCostEmployees || 0)})
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
