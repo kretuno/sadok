@@ -115,36 +115,56 @@ const PsychologistPage: React.FC = () => {
   }, []);
 
   const fetchData = async () => {
+    // 1. Спочатку завантажуємо групи (критично для обох видів)
     try {
-      const [cardsRes, inclusiveRes, consRes, groupsRes] = await Promise.all([
-        api.get('/psychologist/cards'),
-        api.get('/psychologist/inclusive'),
-        api.get('/psychologist/consultations'),
-        api.get('/children/groups')
-      ]);
-      setChildren(cardsRes.data);
-      setInclusiveChildren(inclusiveRes.data);
-      setConsultations(consRes.data);
-      setGroups(groupsRes.data);
+      const groupsRes = await api.get('/children/groups');
+      setGroups(groupsRes.data || []);
+    } catch (error) {
+      console.error('Помилка завантаження груп дітей:', error);
+    }
+
+    // 2. Завантажуємо психологічні картки дітей (критично)
+    try {
+      const cardsRes = await api.get('/psychologist/cards');
+      const cardsData = cardsRes.data || [];
+      setChildren(cardsData);
       
       // Якщо дітей мало, автоматично перемикаємо у режим списку для кращої видимості
-      if (cardsRes.data.length <= 5) {
+      if (cardsData.length <= 5) {
         setViewMode('list');
       } else {
         setViewMode('groups');
       }
     } catch (error) {
-      console.error('Помилка завантаження даних психолога', error);
+      console.error('Помилка завантаження психологічних карток:', error);
+    }
+
+    // 3. Завантажуємо інклюзивні картки (другорядне, не повинно ламати основний список)
+    try {
+      const inclusiveRes = await api.get('/psychologist/inclusive');
+      setInclusiveChildren(inclusiveRes.data || []);
+    } catch (error) {
+      console.error('Помилка завантаження інклюзивних карток:', error);
+    }
+
+    // 4. Завантажуємо консультації (другорядне)
+    try {
+      const consRes = await api.get('/psychologist/consultations');
+      setConsultations(consRes.data || []);
+    } catch (error) {
+      console.error('Помилка завантаження консультацій:', error);
     }
   };
 
-  const filteredChildrenBySearch = children.filter(c => c.fullName.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredChildrenBySearch = children.filter(c => 
+    c && (c.fullName || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
   
   // Якщо є пошуковий запит, ми показуємо всіх знайдених (ігноруємо вибрану групу). 
   // Якщо немає пошуку - ми показуємо дітей вибраної групи.
   const displayChildren = searchTerm.trim().length > 0
     ? filteredChildrenBySearch
-    : filteredChildrenBySearch.filter(c => selectedGroupId ? c.groupId === selectedGroupId : true);
+    : filteredChildrenBySearch.filter(c => c && (selectedGroupId ? c.groupId === selectedGroupId : true));
 
   const handleEditCard = (child: ChildCard) => {
     setSelectedChild(child);
