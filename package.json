@@ -27,6 +27,10 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edosi/sadok-app.git"
+  },
   "devDependencies": {
     "concurrently": "^9.1.2",
     "electron": "^41.2.1",
@@ -38,6 +42,11 @@
     "appId": "ua.osipix.sadok",
     "productName": "SADOK",
     "npmRebuild": false,
+    "publish": {
+      "provider": "github",
+      "owner": "edosi",
+      "repo": "sadok-app"
+    },
     "directories": {
       "output": "Install",
       "buildResources": "build"
@@ -88,5 +97,8 @@
       "shortcutName": "SADOK",
       "include": "build/installer.nsh"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
   }
 }

@@ -6,6 +6,8 @@ import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import Layout from './components/layout/Layout';
+import { UpdateNotification } from './components/layout/UpdateNotification';
+
 
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const InventoryPage = lazy(() => import('./pages/inventory/InventoryPage'));
@@ -85,6 +87,7 @@ const App: React.FC = () => {
           <SettingsProvider>
             <SocketProvider>
               <MainContent />
+              <UpdateNotification />
             </SocketProvider>
           </SettingsProvider>
         </AuthProvider>

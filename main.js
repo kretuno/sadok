@@ -1,9 +1,13 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const dgram = require('dgram');
 const os = require('os');
 const { spawn } = require('child_process');
+
+// Вимикаємо автоматичне завантаження оновлень (Сценарій А)
+autoUpdater.autoDownload = false;
 
 // Обмеження використання оперативної пам'яті (RAM) для процесів Electron
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=256');
@@ -192,6 +196,31 @@ function registerIpcHandlers() {
   ipcMain.handle('sadok:get-config', () => readDesktopConfig());
   ipcMain.handle('sadok:set-config', (_event, config) => writeDesktopConfig(config || {}));
   ipcMain.handle('sadok:discover-servers', () => discoverServers());
+
+  // Автооновлення IPC
+  ipcMain.handle('sadok:check-for-updates', async () => {
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      return { success: true, result };
+    } catch (error) {
+      console.error('[Update] Check error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sadok:download-update', async () => {
+    try {
+      await autoUpdater.downloadUpdate();
+      return { success: true };
+    } catch (error) {
+      console.error('[Update] Download error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('sadok:install-update', () => {
+    autoUpdater.quitAndInstall();
+  });
 }
 
 function startServer() {
@@ -292,12 +321,73 @@ function createWindow() {
   });
 }
 
+function setupAutoUpdater() {
+  autoUpdater.logger = console;
+
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[Update] Checking for update...');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('[Update] Update available:', info.version);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('sadok:update-available', {
+        version: info.version,
+        releaseNotes: info.releaseNotes,
+      });
+    }
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    console.log('[Update] Update not available.');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('sadok:update-not-available');
+    }
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('[Update] Error:', err);
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('sadok:update-error', err.message || String(err));
+    }
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('sadok:download-progress', {
+        percent: progressObj.percent,
+        bytesPerSecond: progressObj.bytesPerSecond,
+        transferred: progressObj.transferred,
+        total: progressObj.total,
+      });
+    }
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[Update] Update downloaded.');
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('sadok:update-downloaded');
+    }
+  });
+}
+
 app.on('ready', () => {
+  setupAutoUpdater();
   registerIpcHandlers();
   startServer();
   startDiscoveryResponder();
   createWindow();
+
+  // Запуск фонової перевірки оновлень через 5 секунд після запуску (лише в продакшн)
+  if (!isDev) {
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.error('[Update] Initial check error:', err);
+      });
+    }, 5000);
+  }
 });
+
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
