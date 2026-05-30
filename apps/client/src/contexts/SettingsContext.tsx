@@ -17,6 +17,10 @@ export interface KindergartenSettings {
   daysRemaining?: number;
   isActivated?: boolean;
   isExpired?: boolean;
+  backupTime?: string;
+  maxBackupsCount?: number;
+  lastBackupDate?: string | null;
+  appVersion?: string;
 }
 
 interface SettingsContextType {

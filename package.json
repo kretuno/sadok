@@ -1,6 +1,6 @@
 {
   "name": "sadok",
-  "version": "1.0.54",
+  "version": "1.0.61",
   "description": "Система управління дитячим садком",
   "main": "main.js",
   "scripts": {
@@ -37,6 +37,7 @@
   "build": {
     "appId": "ua.osipix.sadok",
     "productName": "SADOK",
+    "npmRebuild": false,
     "directories": {
       "output": "Install",
       "buildResources": "build"

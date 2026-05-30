@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { createInvoice, deleteInvoice, getInvoiceDetails, getInvoicesOverview, postInvoice } from '../services/stock';
 import { db } from '../db';
+import { logAuditEvent, getClientIp } from '../services/audit';
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -37,6 +38,15 @@ export const createInvoiceHandler = async (req: AuthRequest, res: Response) => {
       userId: req.user?.id,
     });
 
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'create',
+      entity: 'invoice',
+      entityId: invoice.id,
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(invoice);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -46,6 +56,16 @@ export const createInvoiceHandler = async (req: AuthRequest, res: Response) => {
 export const postInvoiceHandler = async (req: AuthRequest, res: Response) => {
   try {
     const invoice = await postInvoice(Number(req.params.id), req.user?.id);
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'post',
+      entity: 'invoice',
+      entityId: Number(req.params.id),
+      newValue: { status: 'posted' },
+      ipAddress: getClientIp(req),
+    });
+
     res.json(invoice);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -55,6 +75,16 @@ export const postInvoiceHandler = async (req: AuthRequest, res: Response) => {
 export const deleteInvoiceHandler = async (req: AuthRequest, res: Response) => {
   try {
     const result = await deleteInvoice(Number(req.params.id));
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'delete',
+      entity: 'invoice',
+      entityId: Number(req.params.id),
+      newValue: { status: 'deleted' },
+      ipAddress: getClientIp(req),
+    });
+
     res.json(result);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });

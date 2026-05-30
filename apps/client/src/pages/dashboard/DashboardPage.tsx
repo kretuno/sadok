@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../api/axios';
 import { addDays, format, startOfWeek, getDate, getMonth } from 'date-fns';
 import { uk } from 'date-fns/locale';
-import { Package, Baby, FileText, Gift, AlertTriangle, Syringe, HeartPulse, PlusCircle, ArrowDownCircle, Info, Receipt } from 'lucide-react';
+import { Package, Baby, FileText, Gift, AlertTriangle, Syringe, HeartPulse, PlusCircle, ArrowDownCircle, Info, Receipt, Database } from 'lucide-react';
 import { educationQuotes } from '../../data/quotes';
 import { useSettings } from '../../contexts/SettingsContext';
 import { Link } from 'react-router-dom';
@@ -48,7 +48,7 @@ const DashboardPage: React.FC = () => {
       const weekEnd = addDays(weekStart, 6);
       const dates = Array.from({ length: 7 }).map((_, index) => addDays(weekStart, index));
 
-      const [productsRes, recipesRes, menusRes, childrenRes, employeesRes, illnessesRes, vaccinationsRes, medicationsRes, invoicesRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get('/products'),
         api.get('/recipes'),
         api.get(`/menus?start=${format(weekStart, 'yyyy-MM-dd')}&end=${format(weekEnd, 'yyyy-MM-dd')}`),
@@ -60,14 +60,19 @@ const DashboardPage: React.FC = () => {
         api.get('/invoices')
       ]);
 
-      const products = productsRes.data as Array<{ stockQuantity: number; totalValue: number; isLowStock: boolean }>;
-      const menus = menusRes.data as Array<{ id: number; date: string; isConfirmed: boolean }>;
-      const children = childrenRes.data as Array<{ fullName: string; birthDate: string }>;
-      const employees = employeesRes.data as Array<any>;
-      const illnessesRecords = illnessesRes.data as Array<{ endDate: string | null }>;
-      const vaccinationsRecords = vaccinationsRes.data as Array<{ status: string; planDate: string | null }>;
-      const medicationsRecords = medicationsRes.data as Array<{ expiryDate: string | null }>;
-      const allInvoices = invoicesRes.data as Array<{ status: string }>;
+      const getValue = (result: PromiseSettledResult<any>, fallback: any = []) => {
+        return result.status === 'fulfilled' ? result.value.data : fallback;
+      };
+
+      const products = getValue(results[0]) as Array<{ stockQuantity: number; totalValue: number; isLowStock: boolean }>;
+      const recipes = getValue(results[1]) as Array<any>;
+      const menus = getValue(results[2]) as Array<{ id: number; date: string; isConfirmed: boolean }>;
+      const children = getValue(results[3]) as Array<{ fullName: string; birthDate: string }>;
+      const employees = getValue(results[4]) as Array<any>;
+      const illnessesRecords = getValue(results[5]) as Array<{ endDate: string | null }>;
+      const vaccinationsRecords = getValue(results[6]) as Array<{ status: string; planDate: string | null }>;
+      const medicationsRecords = getValue(results[7]) as Array<{ expiryDate: string | null }>;
+      const allInvoices = getValue(results[8]) as Array<{ status: string }>;
 
       const todayMenu = menus.find(m => new Date(m.date).toDateString() === todayDate.toDateString());
       
@@ -77,7 +82,7 @@ const DashboardPage: React.FC = () => {
         stockItems: products.reduce((sum, item) => sum + Number(item.stockQuantity || 0), 0),
         stockValue: products.reduce((sum, item) => sum + Number(item.totalValue || 0), 0),
         lowStock: lowStockCount,
-        recipesCount: recipesRes.data.length,
+        recipesCount: recipes.length,
         weekMenusCount: menus.length,
         confirmedMenusCount: menus.filter((item) => item.isConfirmed).length,
         totalChildren: children.length,
@@ -198,6 +203,20 @@ const DashboardPage: React.FC = () => {
     [weeklyTopProducts]
   );
 
+  const showBackupAlert = useMemo(() => {
+    if (!settings) return false;
+    
+    if (!settings.lastBackupDate) {
+      return true;
+    }
+    
+    const lastBackup = new Date(settings.lastBackupDate);
+    const diffTime = Date.now() - lastBackup.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    
+    return diffDays > 2;
+  }, [settings]);
+
   const formatMoney = (value: number) =>
     new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH' }).format(value);
 
@@ -223,7 +242,7 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Trial / License Status Banner */}
-      {!settings?.isActivated && (
+      {(!settings?.isActivated || settings?.isExpired) && (
         <div className={`p-4 rounded-3xl border flex items-center justify-between gap-4 animate-pulse-subtle shadow-sm ${
           settings?.isExpired ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
         }`}>
@@ -235,11 +254,15 @@ const DashboardPage: React.FC = () => {
             </div>
             <div>
               <h4 className={`font-bold ${settings?.isExpired ? 'text-red-800' : 'text-blue-800'}`}>
-                {settings?.isExpired ? 'Пробний період завершився' : 'Пробний період'}
+                {settings?.isExpired 
+                  ? (settings?.isActivated ? 'Термін дії ліцензії закінчився' : 'Пробний період завершився') 
+                  : 'Пробний період'}
               </h4>
               <p className={`text-sm ${settings?.isExpired ? 'text-red-600' : 'text-blue-600'}`}>
                 {settings?.isExpired 
-                  ? 'Основні функції програми обмежено. Будь ласка, активуйте ліцензію для продовження роботи.' 
+                  ? (settings?.isActivated 
+                      ? 'Будь ласка, введіть новий ліцензійний ключ в налаштуваннях для продовження повноцінної роботи.' 
+                      : 'Основні функції програми обмежено. Будь ласка, активуйте ліцензію для продовження роботи.')
                   : `Ви використовуєте ознайомчу версію. Залишилося днів: ${settings?.daysRemaining || 0}`}
               </p>
             </div>
@@ -460,6 +483,24 @@ const DashboardPage: React.FC = () => {
                        <div>
                           <p className="text-sm font-bold text-red-800">Закінчуються продукти</p>
                           <p className="text-xs text-red-600 mt-1">Виявлено критичний залишок: {lowStockItems} позицій.</p>
+                       </div>
+                    </div>
+                  </Link>
+                )}
+                
+                {/* Backup Warning */}
+                {showBackupAlert && (
+                  <Link to="/settings" className="block bg-red-50 border border-red-100 p-3 rounded-xl hover:bg-red-100 transition-colors cursor-pointer group">
+                    <div className="flex items-start gap-3">
+                       <div className="mt-0.5 text-red-500 group-hover:scale-110 transition-transform"><Database size={18} /></div>
+                       <div>
+                          <p className="text-sm font-bold text-red-800">Відсутні резервні копії</p>
+                          <p className="text-xs text-red-600 mt-1">
+                            {settings?.lastBackupDate 
+                              ? `Остання копія бази даних була створена більше 2 днів тому: ${new Date(settings.lastBackupDate).toLocaleDateString('uk-UA')}.`
+                              : 'Не виявлено жодної резервної копії бази даних.'}
+                            {' '}Створіть резервну копію у вкладці налаштувань.
+                          </p>
                        </div>
                     </div>
                   </Link>

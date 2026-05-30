@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { and, asc, desc, eq, lte } from 'drizzle-orm';
 import { db } from '../db';
 import { utilityMeterReadings, utilityMeters, utilityTariffs } from '../db/schema';
+import { logAuditEvent, getClientIp } from '../services/audit';
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -97,6 +98,15 @@ export const createMeter = async (req: Request, res: Response) => {
       isActive: payload.isActive !== false,
     }).returning();
 
+    await logAuditEvent({
+      userId: (req as any).user?.id,
+      actionType: 'create',
+      entity: 'utility_meter',
+      entityId: createdMeter.id,
+      newValue: payload,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(createdMeter);
   } catch (error) {
     console.error(error);
@@ -117,6 +127,15 @@ export const updateMeter = async (req: Request, res: Response) => {
       notes: payload.notes || null,
       isActive: payload.isActive !== false,
     }).where(eq(utilityMeters.id, meterId)).returning();
+
+    await logAuditEvent({
+      userId: (req as any).user?.id,
+      actionType: 'update',
+      entity: 'utility_meter',
+      entityId: meterId,
+      newValue: payload,
+      ipAddress: getClientIp(req),
+    });
 
     res.json(updatedMeter);
   } catch (error) {
@@ -181,6 +200,15 @@ export const createReading = async (req: Request, res: Response) => {
       createdByUserId: userId,
     }).returning();
 
+    await logAuditEvent({
+      userId,
+      actionType: 'create',
+      entity: 'utility_meter_reading',
+      entityId: createdReading.id,
+      newValue: { meterId, readingValue, readingDate, notes: payload.notes },
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(createdReading);
   } catch (error) {
     console.error(error);
@@ -226,6 +254,15 @@ export const createTariff = async (req: Request, res: Response) => {
       notes: payload.notes || null,
     }).returning();
 
+    await logAuditEvent({
+      userId: (req as any).user?.id,
+      actionType: 'create',
+      entity: 'utility_tariff',
+      entityId: createdTariff.id,
+      newValue: payload,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(createdTariff);
   } catch (error) {
     console.error(error);
@@ -244,6 +281,15 @@ export const updateTariff = async (req: Request, res: Response) => {
       validFrom: new Date(payload.validFrom),
       notes: payload.notes || null,
     }).where(eq(utilityTariffs.id, tariffId)).returning();
+
+    await logAuditEvent({
+      userId: (req as any).user?.id,
+      actionType: 'update',
+      entity: 'utility_tariff',
+      entityId: tariffId,
+      newValue: payload,
+      ipAddress: getClientIp(req),
+    });
 
     res.json(updatedTariff);
   } catch (error) {

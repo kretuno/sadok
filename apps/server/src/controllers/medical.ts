@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { logAuditEvent, getClientIp } from '../services/audit';
 import { db } from '../db';
 import crypto from 'crypto';
 import {
@@ -21,14 +22,16 @@ export const spendMedication = async (req: Request, res: Response) => {
     const { medicationId, quantity, reason, childId, date } = req.body;
     const userId = (req as any).user?.id;
 
-    const [med] = await db.select().from(medications).where(eq(medications.id, Number(medicationId)));
-    if (!med) return res.status(404).json({ message: 'Препарат не знайдено' });
-    
-    if (med.quantity < Number(quantity)) {
-      return res.status(400).json({ message: 'Недостатньо препарату на складі' });
-    }
+    const result = await db.transaction(async (tx) => {
+      const [med] = await tx.select().from(medications).where(eq(medications.id, Number(medicationId)));
+      if (!med) {
+        return { status: 404, message: 'Препарат не знайдено' };
+      }
+      
+      if (med.quantity < Number(quantity)) {
+        return { status: 400, message: 'Недостатньо препарату на складі' };
+      }
 
-    await db.transaction(async (tx) => {
       // 1. Зменшуємо кількість
       await tx.update(medications)
         .set({ quantity: med.quantity - Number(quantity) })
@@ -44,6 +47,21 @@ export const spendMedication = async (req: Request, res: Response) => {
         userId,
         date: date ? new Date(date) : new Date()
       });
+
+      return { status: 200, message: 'Списання успішне' };
+    });
+
+    if (result.status !== 200) {
+      return res.status(result.status).json({ message: result.message });
+    }
+
+    await logAuditEvent({
+      userId,
+      actionType: 'spend',
+      entity: 'medication',
+      entityId: Number(medicationId),
+      newValue: { quantity: Number(quantity), reason, childId: childId ? Number(childId) : null },
+      ipAddress: getClientIp(req),
     });
 
     res.json({ message: 'Списання успішне' });
@@ -190,6 +208,15 @@ export const updateChildMedicalCard = async (req: Request, res: Response) => {
       });
     }
 
+    await logAuditEvent({
+      userId,
+      actionType: 'update',
+      entity: 'child_medical_card',
+      entityId: childId,
+      newValue: data,
+      ipAddress: getClientIp(req),
+    });
+
     res.json({ message: 'Медкартку оновлено' });
   } catch (error) {
     console.error(`[Error] Medical Card Update failed:`, error);
@@ -291,6 +318,16 @@ export const createIllness = async (req: Request, res: Response) => {
       isolationWard: Boolean(data.isolationWard),
       notes: data.notes,
     }).returning();
+    const userId = (req as any).user?.id;
+    await logAuditEvent({
+      userId,
+      actionType: 'create',
+      entity: 'illness',
+      entityId: newItem.id,
+      newValue: data,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(newItem);
   } catch (error) {
     console.error(error);
@@ -355,6 +392,16 @@ export const createVaccination = async (req: Request, res: Response) => {
       dateGiven: data.dateGiven ? new Date(data.dateGiven) : null,
       notes: data.notes,
     }).returning();
+    const userId = (req as any).user?.id;
+    await logAuditEvent({
+      userId,
+      actionType: 'create',
+      entity: 'vaccination',
+      entityId: newItem.id,
+      newValue: data,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(newItem);
   } catch (error) {
     console.error(error);
@@ -455,6 +502,15 @@ export const createMedication = async (req: Request, res: Response) => {
 
       return [insertedMedication];
     });
+    await logAuditEvent({
+      userId,
+      actionType: 'create',
+      entity: 'medication',
+      entityId: newItem.id,
+      newValue: data,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(newItem);
   } catch (error) {
     console.error(error);

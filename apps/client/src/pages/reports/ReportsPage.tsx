@@ -134,10 +134,10 @@ const ReportsPage: React.FC = () => {
                 <tr key={row.id}>
                   <td className="p-3 font-bold text-gray-800">{row.name}</td>
                   <td className="p-3 text-gray-500">{row.unit}</td>
-                  <td className="p-3 font-semibold text-right text-gray-600">{row.startStock.toFixed(2)}</td>
-                  <td className="p-3 font-bold text-right text-green-600">{row.incoming > 0 ? `+${row.incoming.toFixed(2)}` : '0.00'}</td>
-                  <td className="p-3 font-bold text-right text-red-600">{row.outgoing > 0 ? `-${row.outgoing.toFixed(2)}` : '0.00'}</td>
-                  <td className="p-3 font-black text-right text-gray-800">{row.endStock.toFixed(2)}</td>
+                  <td className="p-3 font-semibold text-right text-gray-600">{Number(row.startStock || 0).toFixed(2)}</td>
+                  <td className="p-3 font-bold text-right text-green-600">{Number(row.incoming || 0) > 0 ? `+${Number(row.incoming || 0).toFixed(2)}` : '0.00'}</td>
+                  <td className="p-3 font-bold text-right text-red-600">{Number(row.outgoing || 0) > 0 ? `-${Number(row.outgoing || 0).toFixed(2)}` : '0.00'}</td>
+                  <td className="p-3 font-black text-right text-gray-800">{Number(row.endStock || 0).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -218,7 +218,7 @@ const ReportsPage: React.FC = () => {
                   <td className="p-3 text-center font-bold text-green-600">{row.present}</td>
                   <td className="p-3 text-center font-bold text-red-600">{row.absent}</td>
                   <td className="p-3 text-center font-black text-gray-800">
-                    {((row.present / row.total) * 100).toFixed(1)}%
+                    {row.total ? ((row.present / row.total) * 100).toFixed(1) : '0.0'}%
                   </td>
                 </tr>
               ))}
@@ -268,7 +268,7 @@ const ReportsPage: React.FC = () => {
               {data.map((row: any) => (
                 <tr key={row.id}>
                   <td className="p-3 font-black text-gray-800">{row.name}</td>
-                  <td className="p-3 text-center font-bold text-red-600">{row.totalQuantity.toFixed(3)}</td>
+                  <td className="p-3 text-center font-bold text-red-600">{Number(row.totalQuantity || 0).toFixed(3)}</td>
                   <td className="p-3 text-gray-500">{row.unit}</td>
                   <td className="p-3 text-right font-black text-gray-800">{row.totalCost?.toFixed(2) || '0.00'} грн</td>
                 </tr>
@@ -396,7 +396,7 @@ const ReportsPage: React.FC = () => {
                 <th className="p-3 font-bold text-gray-600 border-b">Дата</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Прийом їжі</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Назва страви</th>
-                <th className="p-3 font-bold text-gray-600 border-b text-right">Дітей (0-4 / 5-7)</th>
+                <th className="p-3 font-bold text-gray-600 border-b text-right">Дітей / співр. (0-4 / 5-7 / співр.)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -405,7 +405,7 @@ const ReportsPage: React.FC = () => {
                   <td className="p-3 font-bold text-gray-800">{new Date(row.date).toLocaleDateString('uk-UA')}</td>
                   <td className="p-3 text-warm-600 font-bold uppercase text-[10px]">{row.mealType}</td>
                   <td className="p-3 font-black text-gray-700">{row.dishName}</td>
-                  <td className="p-3 text-right font-bold text-gray-500">{row.count0_4} / {row.count5_7}</td>
+                  <td className="p-3 text-right font-bold text-gray-500">{row.count0_4} / {row.count5_7} / {row.countEmployees ?? 0}</td>
                 </tr>
               ))}
             </tbody>
@@ -494,6 +494,7 @@ const ReportsPage: React.FC = () => {
                 <th className="p-3 font-bold text-gray-600 border-b">Дата</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-right">0-4</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-right">5-7</th>
+                <th className="p-3 font-bold text-gray-600 border-b text-right">Співробітники</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-right">Разом</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Статус</th>
               </tr>
@@ -504,7 +505,8 @@ const ReportsPage: React.FC = () => {
                   <td className="p-3 font-bold text-gray-800">{new Date(row.date).toLocaleDateString('uk-UA')}</td>
                   <td className="p-3 text-right font-semibold text-gray-600">{row.count0_4 ?? '—'}</td>
                   <td className="p-3 text-right font-semibold text-gray-600">{row.count5_7 ?? '—'}</td>
-                  <td className="p-3 text-right font-black text-gray-800">{row.childrenTotal}</td>
+                  <td className="p-3 text-right font-semibold text-gray-600">{row.employeesCount ?? '0'}</td>
+                  <td className="p-3 text-right font-black text-gray-800">{(row.count0_4 ?? 0) + (row.count5_7 ?? 0) + (row.employeesCount ?? 0)}</td>
                   <td className="p-3">
                     <span
                       className={`rounded-lg px-2 py-1 text-[10px] font-black uppercase ${

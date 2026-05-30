@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
+import { logAuditEvent, getClientIp } from '../services/audit';
 import { uploadPath } from '../paths';
 import {
   createChild,
@@ -31,11 +32,22 @@ export const getGroupsHandler = async (req: AuthRequest, res: Response) => {
 
 export const createGroupHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const data = await createGroup({
+    const payload = {
       name: req.body.name,
       primaryEducatorId: req.body.primaryEducatorId ? Number(req.body.primaryEducatorId) : null,
       assistantEducatorId: req.body.assistantEducatorId ? Number(req.body.assistantEducatorId) : null,
+    };
+    const data = await createGroup(payload);
+    
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'create',
+      entity: 'group',
+      entityId: data[0].id,
+      newValue: payload,
+      ipAddress: getClientIp(req),
     });
+    
     res.status(201).json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -44,11 +56,22 @@ export const createGroupHandler = async (req: AuthRequest, res: Response) => {
 
 export const updateGroupHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const data = await updateGroup(Number(req.params.id), {
+    const payload = {
       name: req.body.name,
       primaryEducatorId: req.body.primaryEducatorId ? Number(req.body.primaryEducatorId) : null,
       assistantEducatorId: req.body.assistantEducatorId ? Number(req.body.assistantEducatorId) : null,
+    };
+    const data = await updateGroup(Number(req.params.id), payload);
+    
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'update',
+      entity: 'group',
+      entityId: Number(req.params.id),
+      newValue: payload,
+      ipAddress: getClientIp(req),
     });
+    
     res.json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -76,6 +99,16 @@ export const getChildrenHandler = async (req: AuthRequest, res: Response) => {
 export const createChildHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await createChild(req.body);
+    
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'create',
+      entity: 'child',
+      entityId: data[0].id,
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+    
     res.status(201).json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -87,6 +120,16 @@ export const archiveChildHandler = async (req: AuthRequest, res: Response) => {
     const childId = Number(req.params.id);
     const reason = req.body.reason || 'Вибув із закладу';
     const data = await archiveChild(childId, reason);
+    
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'archive',
+      entity: 'child',
+      entityId: childId,
+      newValue: { reason },
+      ipAddress: getClientIp(req),
+    });
+    
     res.json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -116,6 +159,16 @@ export const updateChildHandler = async (req: AuthRequest, res: Response) => {
     const childId = Number(req.params.id);
     console.log(`[Controller] PATCH /children/${childId} payload:`, JSON.stringify(req.body));
     const data = await updateChild(childId, req.body);
+    
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'update',
+      entity: 'child',
+      entityId: childId,
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+    
     res.json(data);
   } catch (error) {
     console.error(`[Error] PATCH /children failed:`, error);

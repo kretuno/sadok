@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { SettingsProvider } from './contexts/SettingsContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import Layout from './components/layout/Layout';
@@ -32,9 +32,24 @@ const PageFallback: React.FC = () => (
 
 const MainContent: React.FC = () => {
   const { user } = useAuth();
+  const { settings } = useSettings();
 
   if (!user) {
     return <LoginPage />;
+  }
+
+  if (settings?.isExpired) {
+    return (
+      <Layout>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<Navigate to="/settings" />} />
+          </Routes>
+          <ChatPanel />
+        </Suspense>
+      </Layout>
+    );
   }
 
   return (

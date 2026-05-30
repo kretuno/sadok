@@ -17,6 +17,8 @@ export const kindergartenSettings = sqliteTable('kindergarten_settings', {
   licenseType: text('license_type'), // 'annual', 'lifetime'
   installationDate: integer('installation_date', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   activatedAt: integer('activated_at', { mode: 'timestamp' }),
+  backupTime: text('backup_time').notNull().default('03:00'),
+  maxBackupsCount: integer('max_backups_count').notNull().default(7),
 });
 
 export const users = sqliteTable('users', {
@@ -139,6 +141,7 @@ export const dailyMenus = sqliteTable('daily_menus', {
   date: integer('date', { mode: 'timestamp' }).notNull(),
   childrenCount0_4: integer('children_count_0_4').notNull(),
   childrenCount5_7: integer('children_count_5_7').notNull(),
+  employeesCount: integer('employees_count').default(0).notNull(),
   targetPrice0_4: real('target_price_0_4'),
   targetPrice5_7: real('target_price_5_7'),
   isConfirmed: integer('is_confirmed', { mode: 'boolean' }).default(false),
@@ -152,6 +155,7 @@ export const menuItemRecipes = sqliteTable('menu_item_recipes', {
   mealType: text('meal_type').notNull(), // сніданок, обід тощо
   outputWeight0_4: real('output_weight_0_4'),
   outputWeight5_7: real('output_weight_5_7'),
+  outputWeightEmployees: real('output_weight_employees'),
 });
 
 export const menuItemIngredientOverrides = sqliteTable('menu_item_ingredient_overrides', {
@@ -160,8 +164,10 @@ export const menuItemIngredientOverrides = sqliteTable('menu_item_ingredient_ove
     .notNull()
     .references(() => menuItemRecipes.id, { onDelete: 'cascade' }),
   recipeIngredientId: integer('recipe_ingredient_id')
-    .notNull()
     .references(() => recipeIngredients.id, { onDelete: 'cascade' }),
+  productId: integer('product_id').references(() => products.id),
+  subRecipeId: integer('sub_recipe_id').references(() => recipes.id),
+  ageGroup: text('age_group'),
   grossWeight: real('gross_weight').notNull(),
   netWeight: real('net_weight').notNull(),
 });

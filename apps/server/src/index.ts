@@ -1,8 +1,9 @@
+import 'dotenv/config';
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { db } from './db';
 import attendanceRoutes from './routes/attendance';
 import authRoutes from './routes/auth';
@@ -22,8 +23,8 @@ import psychologistRoutes from './routes/psychologist';
 import utilitiesRoutes from './routes/utilities';
 import { ensureDir, uploadsDir } from './paths';
 import { setupSocket } from './socket';
+import { startBackupScheduler } from './scheduler';
 
-dotenv.config();
 ensureDir(uploadsDir);
 
 const app = express();
@@ -75,4 +76,5 @@ const PORT = process.env.PORT || 3000;
 
 httpServer.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  startBackupScheduler();
 });

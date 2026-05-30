@@ -1,10 +1,12 @@
 import React from 'react';
 import { Code, Mail, Phone, User, ExternalLink, ShieldCheck, Heart } from 'lucide-react';
 import ukraineCoatOfArms from '../../assets/ukraine-coat-of-arms.svg';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const AboutPage: React.FC = () => {
   const currentYear = new Date().getFullYear();
-  const appVersion = __APP_VERSION__;
+  const { settings } = useSettings();
+  const appVersion = settings?.appVersion || __APP_VERSION__;
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-white p-4 md:p-8">

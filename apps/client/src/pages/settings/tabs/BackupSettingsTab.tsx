@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertCircle, AlertTriangle, CheckCircle2, Database, Download, RefreshCcw, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import api from '../../../api/axios';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useSettings } from '../../../contexts/SettingsContext';
 import Modal from '../../../components/ui/Modal';
 
 type BackupItem = {
@@ -31,6 +32,8 @@ const formatFileSize = (size: number) => {
 const BackupSettingsTab: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { settings, refreshSettings } = useSettings();
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [backups, setBackups] = useState<BackupItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +42,36 @@ const BackupSettingsTab: React.FC = () => {
   const [busyFile, setBusyFile] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+
+  const [backupTime, setBackupTime] = useState(settings?.backupTime || '03:00');
+  const [maxBackupsCount, setMaxBackupsCount] = useState(settings?.maxBackupsCount || 7);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      setBackupTime(settings.backupTime || '03:00');
+      setMaxBackupsCount(settings.maxBackupsCount || 7);
+    }
+  }, [settings]);
+
+  const handleSaveBackupSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setNotice(null);
+    try {
+      await api.put('/settings', {
+        backupTime,
+        maxBackupsCount: Number(maxBackupsCount)
+      });
+      setNotice({ type: 'success', message: 'Параметри автоматичного резервного копіювання успішно збережено!' });
+      await refreshSettings();
+    } catch (error) {
+      console.error(error);
+      setNotice({ type: 'error', message: 'Не вдалося зберегти налаштування автобекапу.' });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const isAdmin = user?.role === 'admin';
 
@@ -248,6 +281,46 @@ const BackupSettingsTab: React.FC = () => {
           {notice.message}
         </div>
       )}
+
+      {/* Форма налаштування автобекапів */}
+      <div className="rounded-3xl border border-warm-100 bg-white p-6 shadow-sm">
+        <h3 className="mb-2 text-xl font-bold text-gray-800">Розклад автоматичного копіювання</h3>
+        <p className="mb-5 text-sm text-gray-500">Параметри щоденного автоматичного створення стислих резервних копій бази даних.</p>
+        
+        <form onSubmit={handleSaveBackupSettings} className="flex flex-wrap items-end gap-4">
+          <div className="w-52">
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Час щоденного бекапу</label>
+            <input
+              type="time"
+              className="ui-input bg-gray-50 border-gray-200"
+              value={backupTime}
+              onChange={(e) => setBackupTime(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="w-52">
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">Зберігати останніх копій</label>
+            <input
+              type="number"
+              min="1"
+              max="50"
+              className="ui-input bg-gray-50 border-gray-200"
+              value={maxBackupsCount}
+              onChange={(e) => setMaxBackupsCount(Number(e.target.value))}
+              required
+            />
+          </div>
+          
+          <button
+            type="submit"
+            disabled={isSavingSettings}
+            className="ui-button-primary h-11 px-6 bg-warm-600"
+          >
+            {isSavingSettings ? 'Збереження...' : 'Зберегти параметри'}
+          </button>
+        </form>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col rounded-3xl border border-warm-100 bg-white p-8 text-center shadow-sm">

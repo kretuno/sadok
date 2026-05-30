@@ -1,7 +1,7 @@
 {
   "name": "client",
   "private": true,
-  "version": "1.0.54",
+  "version": "1.0.61",
   "type": "module",
   "scripts": {
     "dev": "vite --configLoader native",
@@ -23,6 +23,7 @@
     "react-router-dom": "^7.14.1",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.5.0",
+    "write-excel-file": "^4.0.7",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

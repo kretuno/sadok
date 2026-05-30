@@ -46,7 +46,7 @@ interface PrintMenuProps {
       totalCostAll: number;
     };
   };
-  type: 'parents' | 'kitchen';
+  type: 'parents' | 'kitchen' | 'requirement';
   settings?: any;
 }
 
@@ -95,6 +95,125 @@ const PrintMenu: React.FC<PrintMenuProps> = ({ data, type, settings }) => {
 
   const title = type === 'kitchen' ? 'Розкладка продуктів для кухні' : 'Звітне меню на день';
 
+  // --- REQUIREMENT PRINT (МЕНЮ-ВИМОГА) ---
+  if (type === 'requirement') {
+    const allMenuRecipes = groupedItems.flatMap((group) => 
+      group.items.map((item, idx) => ({
+        key: `${group.mealType}-${item.recipeName}-${idx}`,
+        mealLabel: group.label,
+        recipeName: item.recipeName,
+        outputWeight0_4: item.outputWeight0_4 || item.defaultOutputWeight,
+        outputWeight5_7: item.outputWeight5_7 || item.defaultOutputWeight,
+      }))
+    );
+
+    return (
+      <div className="bg-white p-4 text-[10px] text-black print:p-0">
+        <style dangerouslySetInnerHTML={{__html: `
+          @media print {
+            @page { size: landscape; margin: 8mm; }
+            body { font-size: 8px; }
+            .print-landscape-table { width: 100% !important; }
+          }
+        `}} />
+        <table className="w-full border-collapse border border-black table-fixed">
+          <tbody>
+            <tr>
+              <td className={`${tdClass} font-bold`} colSpan={3}>Установа / Заклад</td>
+              <td className={tdClass} colSpan={allMenuRecipes.length + 1}>{settings?.name || 'Заклад дошкільної освіти'}</td>
+              <td className={`${tdClass} font-bold`} colSpan={1}>Затверджую</td>
+            </tr>
+            <tr>
+              <td className={`${tdClass} font-bold`} colSpan={3}>Адреса</td>
+              <td className={tdClass} colSpan={allMenuRecipes.length + 1}>{settings?.address || 'Адресу не вказано'}</td>
+              <td className={tdClass} colSpan={1}>Директор: _________________</td>
+            </tr>
+            <tr>
+              <td className={`${tdClass} font-bold`} colSpan={3}>Назва документа</td>
+              <td className={`${tdCenterClass} font-bold uppercase`} colSpan={allMenuRecipes.length + 1}>МЕНЮ-ВИМОГА НА ВИДАЧУ ПРОДУКТІВ ХАРЧУВАННЯ</td>
+              <td className={`${tdClass} font-bold`} colSpan={1}>Дата: {dateStr}</td>
+            </tr>
+            <tr>
+              <td className={`${tdClass} font-bold`} colSpan={2}>Діти 0-4: {totalChildren0_4}</td>
+              <td className={`${tdClass} font-bold`} colSpan={2}>Діти 5-7: {totalChildren5_7}</td>
+              <td className={`${tdClass} font-bold`} colSpan={allMenuRecipes.length + 1 - 3}>Усього вихованців: {totals.totalChildren}</td>
+              <td className={`${tdClass} font-bold`} colSpan={1}>Статус: {menu.isConfirmed ? 'Підтверджено' : 'Чернетка'}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table className="mt-3 w-full border-collapse border border-black table-fixed print-landscape-table">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className={`${thClass} text-center w-[120px]`} rowSpan={2}>Назва продукту</th>
+              <th className={`${thClass} text-center w-[35px]`} rowSpan={2}>Од. вим.</th>
+              <th className={`${thClass} text-center`} colSpan={allMenuRecipes.length}>Назва страв та вихід порції</th>
+              <th className={`${thClass} text-center w-[65px]`} rowSpan={2}>Разом (брутто)</th>
+              <th className={`${thClass} text-center w-[55px]`} rowSpan={2}>Ціна за од., грн</th>
+              <th className={`${thClass} text-center w-[65px]`} rowSpan={2}>Загальна сума, грн</th>
+            </tr>
+            <tr className="bg-gray-100">
+              {allMenuRecipes.map((recipe) => (
+                <th key={recipe.key} className={`${thClass} text-center text-[8px] leading-tight font-normal`}>
+                  <div className="font-bold text-gray-800">{recipe.mealLabel}</div>
+                  <div className="truncate" title={recipe.recipeName}>{recipe.recipeName}</div>
+                  <div className="text-[7px] text-gray-500 mt-0.5">
+                    Вих: {recipe.outputWeight0_4}/{recipe.outputWeight5_7}г
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {summaryNeeds.map((need, idx) => (
+              <tr key={`${need.productName}-${idx}`}>
+                <td className={`${tdClass} font-bold`}>{need.productName}</td>
+                <td className={tdCenterClass}>{need.unit}</td>
+                {allMenuRecipes.map((recipe) => {
+                  const matchedLine = flatProductLines.find((line) => 
+                    line.recipeName === recipe.recipeName && 
+                    line.productName === need.productName &&
+                    line.mealLabel === recipe.mealLabel
+                  );
+                  return (
+                    <td key={recipe.key} className={tdRightClass}>
+                      {matchedLine ? formatQty(matchedLine.totalGrossQuantity) : '—'}
+                    </td>
+                  );
+                })}
+                <td className={`${tdRightClass} font-bold`}>{formatQty(need.totalGrossQuantity)}</td>
+                <td className={tdRightClass}>{formatQty(need.unitPrice)}</td>
+                <td className={`${tdRightClass} font-bold bg-gray-50/50`}>{formatQty(need.totalCost)}</td>
+              </tr>
+            ))}
+            <tr className="bg-gray-100 font-bold">
+              <td className={tdClass} colSpan={allMenuRecipes.length + 2}>Загальна вартість продуктів за день</td>
+              <td className={tdRightClass} colSpan={3}>{formatMoney(totals.totalCostAll)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table className="mt-4 w-full border-collapse border border-black table-fixed">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className={`${thClass} text-center`}>Здав (Комірник)</th>
+              <th className={`${thClass} text-center`}>Прийняв (Кухар)</th>
+              <th className={`${thClass} text-center`}>Перевірив (Медсестра)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className={tdClass} height={35}>Комірник: {settings?.storekeeperName || '____________________'}</td>
+              <td className={tdClass}>Кухар: {settings?.cookName || '____________________'}</td>
+              <td className={tdClass}>Медсестра: {settings?.nurseName || '____________________'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  // --- KITCHEN PRINT (РОЗКЛАДКА) ---
   if (type === 'kitchen') {
     return (
       <div className="bg-white p-4 text-[11px] text-black print:p-0">
@@ -248,6 +367,7 @@ const PrintMenu: React.FC<PrintMenuProps> = ({ data, type, settings }) => {
     );
   }
 
+  // --- PARENTS PRINT ---
   return (
     <div className="bg-white p-4 text-[11px] text-black print:p-0">
       <table className="w-full border-collapse border border-black table-fixed">

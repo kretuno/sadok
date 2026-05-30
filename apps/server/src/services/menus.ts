@@ -12,7 +12,10 @@ import {
 import { adjustProductStock, restoreProductStock } from './stock';
 
 export interface MenuItemIngredientOverrideInput {
-  recipeIngredientId: number;
+  recipeIngredientId: number | null;
+  productId?: number | null;
+  subRecipeId?: number | null;
+  ageGroup?: string | null;
   grossWeight?: number | null;
   netWeight?: number | null;
 }
@@ -22,6 +25,7 @@ export interface MenuItemInput {
   mealType: string;
   outputWeight0_4?: number | null;
   outputWeight5_7?: number | null;
+  outputWeightEmployees?: number | null;
   overrides?: MenuItemIngredientOverrideInput[];
 }
 
@@ -29,6 +33,7 @@ export interface DailyMenuInput {
   date: string;
   childrenCount0_4: number;
   childrenCount5_7: number;
+  employeesCount: number;
   targetPrice0_4?: number | null;
   targetPrice5_7?: number | null;
   items: MenuItemInput[];
@@ -58,19 +63,23 @@ interface ProductContribution {
   unit: string;
   grossQuantity0_4: number;
   grossQuantity5_7: number;
+  grossQuantityEmployees: number;
   netQuantity0_4: number;
   netQuantity5_7: number;
+  netQuantityEmployees: number;
   totalGrossQuantity: number;
   totalNetQuantity: number;
   unitPrice: number;
   cost0_4: number;
   cost5_7: number;
+  costEmployees: number;
   totalCost: number;
 }
 
 interface ScaleFactors {
   scale0_4: number;
   scale5_7: number;
+  scaleEmployees: number;
 }
 
 interface MenuAnalysisItemSource {
@@ -82,6 +91,7 @@ interface MenuAnalysisItemSource {
   defaultOutputWeight: number | null;
   outputWeight0_4?: number | null;
   outputWeight5_7?: number | null;
+  outputWeightEmployees?: number | null;
   overrides?: MenuItemIngredientOverrideInput[];
 }
 
@@ -142,19 +152,19 @@ const ensureNonNegativeWeight = (value: number | null | undefined, fieldName: st
   return round4(Number(value));
 };
 
-const getAgeGroupChildrenCounts = (
+const getAgeGroupCounts = (
   ageGroup: string,
-  menu: { childrenCount0_4: number; childrenCount5_7: number }
+  menu: { childrenCount0_4: number; childrenCount5_7: number; employeesCount: number }
 ) => {
   if (ageGroup === '0-4') {
-    return { count0_4: menu.childrenCount0_4, count5_7: 0 };
+    return { count0_4: menu.childrenCount0_4, count5_7: 0, countEmployees: 0 };
   }
 
   if (ageGroup === '5-7') {
-    return { count0_4: 0, count5_7: menu.childrenCount5_7 };
+    return { count0_4: 0, count5_7: menu.childrenCount5_7, countEmployees: menu.employeesCount };
   }
 
-  return { count0_4: menu.childrenCount0_4, count5_7: menu.childrenCount5_7 };
+  return { count0_4: menu.childrenCount0_4, count5_7: menu.childrenCount5_7, countEmployees: menu.employeesCount };
 };
 
 async function getMenuBase(menuId: number) {
@@ -180,6 +190,7 @@ async function getMenuItemRows(menuId: number) {
       defaultOutputWeight: recipes.outputWeight,
       outputWeight0_4: menuItemRecipes.outputWeight0_4,
       outputWeight5_7: menuItemRecipes.outputWeight5_7,
+      outputWeightEmployees: menuItemRecipes.outputWeightEmployees,
     })
     .from(menuItemRecipes)
     .innerJoin(recipes, eq(recipes.id, menuItemRecipes.recipeId))
@@ -238,26 +249,58 @@ async function getRecipeIngredientDefinitions(
 
   const baseDefinitions = cache.get(recipeId) ?? [];
   const overridesMap = new Map<number, { grossWeight: number; netWeight: number }>();
+  const customIngredients: IngredientDefinition[] = [];
 
   if (menuItemId) {
     const overrides = await db
       .select({
+        id: menuItemIngredientOverrides.id,
         recipeIngredientId: menuItemIngredientOverrides.recipeIngredientId,
+        productId: menuItemIngredientOverrides.productId,
+        subRecipeId: menuItemIngredientOverrides.subRecipeId,
+        ageGroup: menuItemIngredientOverrides.ageGroup,
         grossWeight: menuItemIngredientOverrides.grossWeight,
         netWeight: menuItemIngredientOverrides.netWeight,
+        productName: products.name,
+        productUnit: products.unit,
+        productPrice: products.currentPrice,
+        subRecipeName: recipes.name,
+        subRecipeOutputWeight: recipes.outputWeight,
       })
       .from(menuItemIngredientOverrides)
+      .leftJoin(products, eq(products.id, menuItemIngredientOverrides.productId))
+      .leftJoin(recipes, eq(recipes.id, menuItemIngredientOverrides.subRecipeId))
       .where(eq(menuItemIngredientOverrides.menuItemId, menuItemId));
 
     overrides.forEach((override) => {
-      overridesMap.set(override.recipeIngredientId, {
-        grossWeight: Number(override.grossWeight),
-        netWeight: Number(override.netWeight),
-      });
+      if (override.recipeIngredientId) {
+        overridesMap.set(override.recipeIngredientId, {
+          grossWeight: Number(override.grossWeight),
+          netWeight: Number(override.netWeight),
+        });
+      } else {
+        customIngredients.push({
+          recipeIngredientId: -override.id,
+          recipeId: recipeId,
+          productId: override.productId,
+          subRecipeId: override.subRecipeId,
+          ageGroup: override.ageGroup || 'common',
+          defaultGrossWeight: 0,
+          defaultNetWeight: 0,
+          effectiveGrossWeight: Number(override.grossWeight),
+          effectiveNetWeight: Number(override.netWeight),
+          productName: override.productName,
+          productUnit: override.productUnit,
+          productPrice: Number(override.productPrice ?? 0),
+          subRecipeName: override.subRecipeName,
+          subRecipeOutputWeight: Number(override.subRecipeOutputWeight ?? 0),
+          isAdjusted: true,
+        });
+      }
     });
   }
 
-  return baseDefinitions.map((definition) => {
+  const mappedBase = baseDefinitions.map((definition) => {
     const override = overridesMap.get(definition.recipeIngredientId);
     const effectiveGrossWeight = override ? Number(override.grossWeight) : definition.defaultGrossWeight;
     const effectiveNetWeight = override ? Number(override.netWeight) : definition.defaultNetWeight;
@@ -273,9 +316,11 @@ async function getRecipeIngredientDefinitions(
       ),
     };
   });
+
+  return [...mappedBase, ...customIngredients];
 }
 
-const applyIngredientOverrides = (
+const applyIngredientOverrides = async (
   ingredientDefinitions: IngredientDefinition[],
   overrides?: MenuItemIngredientOverrideInput[]
 ) => {
@@ -284,15 +329,46 @@ const applyIngredientOverrides = (
   }
 
   const overridesMap = new Map<number, { grossWeight: number; netWeight: number }>();
+  const customIngredients: IngredientDefinition[] = [];
 
-  overrides.forEach((override) => {
-    overridesMap.set(override.recipeIngredientId, {
-      grossWeight: ensureNonNegativeWeight(override.grossWeight, 'grossWeight'),
-      netWeight: ensureNonNegativeWeight(override.netWeight, 'netWeight'),
-    });
+  const newProductOverrides = overrides.filter(o => o.recipeIngredientId === null && o.productId);
+  let productsMap = new Map<number, any>();
+
+  if (newProductOverrides.length > 0) {
+    const productIds = newProductOverrides.map(o => o.productId!);
+    const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
+    productsMap = new Map(dbProducts.map(p => [p.id, p]));
+  }
+
+  overrides.forEach((override, idx) => {
+    if (override.recipeIngredientId) {
+      overridesMap.set(override.recipeIngredientId, {
+        grossWeight: ensureNonNegativeWeight(override.grossWeight, 'grossWeight'),
+        netWeight: ensureNonNegativeWeight(override.netWeight, 'netWeight'),
+      });
+    } else if (override.productId) {
+      const prod = productsMap.get(override.productId);
+      customIngredients.push({
+        recipeIngredientId: -(1000 + idx),
+        recipeId: 0,
+        productId: override.productId,
+        subRecipeId: null,
+        ageGroup: override.ageGroup || 'common',
+        defaultGrossWeight: 0,
+        defaultNetWeight: 0,
+        effectiveGrossWeight: ensureNonNegativeWeight(override.grossWeight, 'grossWeight'),
+        effectiveNetWeight: ensureNonNegativeWeight(override.netWeight, 'netWeight'),
+        productName: prod?.name || 'Невідомий продукт',
+        productUnit: prod?.unit || 'од.',
+        productPrice: Number(prod?.currentPrice ?? 0),
+        subRecipeName: null,
+        subRecipeOutputWeight: 0,
+        isAdjusted: true,
+      });
+    }
   });
 
-  return ingredientDefinitions.map((definition) => {
+  const mappedBase = ingredientDefinitions.map((definition) => {
     const override = overridesMap.get(definition.recipeIngredientId);
 
     if (!override) {
@@ -308,22 +384,29 @@ const applyIngredientOverrides = (
         round4(override.netWeight) !== round4(definition.defaultNetWeight),
     };
   });
+
+  return [...mappedBase, ...customIngredients];
 };
 
 async function expandIngredientToProducts(
   ingredient: IngredientDefinition,
-  menu: { childrenCount0_4: number; childrenCount5_7: number },
+  menu: { childrenCount0_4: number; childrenCount5_7: number; employeesCount: number },
   cache = new Map<number, IngredientDefinition[]>(),
-  scales: ScaleFactors = { scale0_4: 1, scale5_7: 1 }
+  scales: ScaleFactors = { scale0_4: 1, scale5_7: 1, scaleEmployees: 1 }
 ): Promise<ProductContribution[]> {
   if (ingredient.productId) {
-    const { count0_4, count5_7 } = getAgeGroupChildrenCounts(ingredient.ageGroup, menu);
+    const { count0_4, count5_7, countEmployees } = getAgeGroupCounts(ingredient.ageGroup, menu);
     const grossQuantity0_4 = round4((ingredient.effectiveGrossWeight * scales.scale0_4 * count0_4) / 1000);
     const grossQuantity5_7 = round4((ingredient.effectiveGrossWeight * scales.scale5_7 * count5_7) / 1000);
+    const grossQuantityEmployees = round4((ingredient.effectiveGrossWeight * scales.scaleEmployees * countEmployees) / 1000);
+    
     const netQuantity0_4 = round4((ingredient.effectiveNetWeight * scales.scale0_4 * count0_4) / 1000);
     const netQuantity5_7 = round4((ingredient.effectiveNetWeight * scales.scale5_7 * count5_7) / 1000);
+    const netQuantityEmployees = round4((ingredient.effectiveNetWeight * scales.scaleEmployees * countEmployees) / 1000);
+    
     const cost0_4 = round2(grossQuantity0_4 * ingredient.productPrice);
     const cost5_7 = round2(grossQuantity5_7 * ingredient.productPrice);
+    const costEmployees = round2(grossQuantityEmployees * ingredient.productPrice);
 
     return [{
       productId: ingredient.productId,
@@ -331,14 +414,17 @@ async function expandIngredientToProducts(
       unit: ingredient.productUnit ?? 'од.',
       grossQuantity0_4,
       grossQuantity5_7,
+      grossQuantityEmployees,
       netQuantity0_4,
       netQuantity5_7,
-      totalGrossQuantity: round4(grossQuantity0_4 + grossQuantity5_7),
-      totalNetQuantity: round4(netQuantity0_4 + netQuantity5_7),
+      netQuantityEmployees,
+      totalGrossQuantity: round4(grossQuantity0_4 + grossQuantity5_7 + grossQuantityEmployees),
+      totalNetQuantity: round4(netQuantity0_4 + netQuantity5_7 + netQuantityEmployees),
       unitPrice: round2(ingredient.productPrice),
       cost0_4,
       cost5_7,
-      totalCost: round2(cost0_4 + cost5_7),
+      costEmployees,
+      totalCost: round2(cost0_4 + cost5_7 + costEmployees),
     }];
   }
 
@@ -351,10 +437,11 @@ async function expandIngredientToProducts(
     ? {
       scale0_4: scales.scale0_4 * (ingredient.effectiveNetWeight / outputWeight),
       scale5_7: scales.scale5_7 * (ingredient.effectiveNetWeight / outputWeight),
+      scaleEmployees: scales.scaleEmployees * (ingredient.effectiveNetWeight / outputWeight),
     }
     : scales;
 
-  if (nestedScales.scale0_4 <= 0 && nestedScales.scale5_7 <= 0) {
+  if (nestedScales.scale0_4 <= 0 && nestedScales.scale5_7 <= 0 && nestedScales.scaleEmployees <= 0) {
     return [];
   }
 
@@ -380,12 +467,15 @@ const aggregateProducts = (productsList: ProductContribution[]) => {
 
     existing.grossQuantity0_4 = round4(existing.grossQuantity0_4 + line.grossQuantity0_4);
     existing.grossQuantity5_7 = round4(existing.grossQuantity5_7 + line.grossQuantity5_7);
+    existing.grossQuantityEmployees = round4(existing.grossQuantityEmployees + line.grossQuantityEmployees);
     existing.netQuantity0_4 = round4(existing.netQuantity0_4 + line.netQuantity0_4);
     existing.netQuantity5_7 = round4(existing.netQuantity5_7 + line.netQuantity5_7);
+    existing.netQuantityEmployees = round4(existing.netQuantityEmployees + line.netQuantityEmployees);
     existing.totalGrossQuantity = round4(existing.totalGrossQuantity + line.totalGrossQuantity);
     existing.totalNetQuantity = round4(existing.totalNetQuantity + line.totalNetQuantity);
     existing.cost0_4 = round2(existing.cost0_4 + line.cost0_4);
     existing.cost5_7 = round2(existing.cost5_7 + line.cost5_7);
+    existing.costEmployees = round2(existing.costEmployees + line.costEmployees);
     existing.totalCost = round2(existing.totalCost + line.totalCost);
   });
 
@@ -409,6 +499,7 @@ async function buildMenuAnalysis(
     date: Date;
     childrenCount0_4: number;
     childrenCount5_7: number;
+    employeesCount: number;
     targetPrice0_4?: number | null;
     targetPrice5_7?: number | null;
     isConfirmed: boolean;
@@ -428,9 +519,11 @@ async function buildMenuAnalysis(
       const defaultOutputWeight = Number(item.defaultOutputWeight ?? 0);
       const outputWeight0_4 = Number(item.outputWeight0_4 ?? item.defaultOutputWeight ?? 0);
       const outputWeight5_7 = Number(item.outputWeight5_7 ?? item.defaultOutputWeight ?? 0);
+      const outputWeightEmployees = Number(item.outputWeightEmployees ?? item.defaultOutputWeight ?? 0);
       const scales: ScaleFactors = {
         scale0_4: defaultOutputWeight > 0 && outputWeight0_4 > 0 ? outputWeight0_4 / defaultOutputWeight : 1,
         scale5_7: defaultOutputWeight > 0 && outputWeight5_7 > 0 ? outputWeight5_7 / defaultOutputWeight : 1,
+        scaleEmployees: defaultOutputWeight > 0 && outputWeightEmployees > 0 ? outputWeightEmployees / defaultOutputWeight : 1,
       };
       const expandedProducts = await Promise.all(
         ingredientDefinitions.map((ingredient) => expandIngredientToProducts(ingredient, menu, cache, scales))
@@ -439,6 +532,7 @@ async function buildMenuAnalysis(
 
       const cost0_4 = round2(aggregatedProducts.reduce((sum, line) => sum + line.cost0_4, 0));
       const cost5_7 = round2(aggregatedProducts.reduce((sum, line) => sum + line.cost5_7, 0));
+      const costEmployees = round2(aggregatedProducts.reduce((sum, line) => sum + line.costEmployees, 0));
       const hasAdjustments = ingredientDefinitions.some((ingredient) => ingredient.isAdjusted);
 
       return {
@@ -447,6 +541,7 @@ async function buildMenuAnalysis(
         defaultOutputWeight: Number(item.defaultOutputWeight ?? 0),
         outputWeight0_4: item.outputWeight0_4 !== null ? Number(item.outputWeight0_4) : null,
         outputWeight5_7: item.outputWeight5_7 !== null ? Number(item.outputWeight5_7) : null,
+        outputWeightEmployees: item.outputWeightEmployees !== null ? Number(item.outputWeightEmployees) : null,
         hasAdjustments,
         adjustmentsCount: ingredientDefinitions.filter((ingredient) => ingredient.isAdjusted).length,
         ingredientAdjustments: ingredientDefinitions.map((ingredient) => ({
@@ -466,6 +561,7 @@ async function buildMenuAnalysis(
         productBreakdown: aggregatedProducts,
         cost0_4,
         cost5_7,
+        costEmployees,
       };
     })
   );
@@ -482,10 +578,13 @@ async function buildMenuAnalysis(
 
   const totalCost0_4 = round2(summaryNeeds.reduce((sum, line) => sum + line.cost0_4, 0));
   const totalCost5_7 = round2(summaryNeeds.reduce((sum, line) => sum + line.cost5_7, 0));
+  const totalCostEmployees = round2(summaryNeeds.reduce((sum, line) => sum + line.costEmployees, 0));
   const childrenCount0_4 = Number(menu.childrenCount0_4);
   const childrenCount5_7 = Number(menu.childrenCount5_7);
+  const employeesCount = Number(menu.employeesCount);
   const costPerChild0_4 = childrenCount0_4 > 0 ? round2(totalCost0_4 / childrenCount0_4) : 0;
   const costPerChild5_7 = childrenCount5_7 > 0 ? round2(totalCost5_7 / childrenCount5_7) : 0;
+  const costPerEmployee = employeesCount > 0 ? round2(totalCostEmployees / employeesCount) : 0;
 
   return {
     ...menu,
@@ -497,11 +596,14 @@ async function buildMenuAnalysis(
     summaryNeeds,
     totals: {
       totalChildren: childrenCount0_4 + childrenCount5_7,
+      totalEmployees: employeesCount,
       costPerChild0_4,
       costPerChild5_7,
+      costPerEmployee,
       totalCost0_4,
       totalCost5_7,
-      totalCostAll: round2(totalCost0_4 + totalCost5_7),
+      totalCostEmployees,
+      totalCostAll: round2(totalCost0_4 + totalCost5_7 + totalCostEmployees),
     },
   };
 }
@@ -651,6 +753,7 @@ export async function previewMenu(input: DailyMenuInput) {
       defaultOutputWeight: recipe.outputWeight,
       outputWeight0_4: item.outputWeight0_4 ?? null,
       outputWeight5_7: item.outputWeight5_7 ?? null,
+      outputWeightEmployees: item.outputWeightEmployees ?? null,
       overrides: item.overrides ?? [],
     };
   });
@@ -661,6 +764,7 @@ export async function previewMenu(input: DailyMenuInput) {
       date: menuDate,
       childrenCount0_4: input.childrenCount0_4,
       childrenCount5_7: input.childrenCount5_7,
+      employeesCount: input.employeesCount,
       targetPrice0_4: input.targetPrice0_4,
       targetPrice5_7: input.targetPrice5_7,
       isConfirmed: false,
@@ -669,7 +773,7 @@ export async function previewMenu(input: DailyMenuInput) {
     items,
     async (item, cache) => {
       const ingredientDefinitions = await getRecipeIngredientDefinitions(item.recipeId, undefined, cache);
-      return applyIngredientOverrides(ingredientDefinitions, item.overrides);
+      return await applyIngredientOverrides(ingredientDefinitions, item.overrides);
     }
   );
 }
@@ -691,6 +795,7 @@ export async function createOrUpdateMenu(input: DailyMenuInput) {
       .set({
         childrenCount0_4: input.childrenCount0_4,
         childrenCount5_7: input.childrenCount5_7,
+        employeesCount: input.employeesCount,
         targetPrice0_4: input.targetPrice0_4,
         targetPrice5_7: input.targetPrice5_7,
       })
@@ -702,6 +807,7 @@ export async function createOrUpdateMenu(input: DailyMenuInput) {
         date: menuDate,
         childrenCount0_4: input.childrenCount0_4,
         childrenCount5_7: input.childrenCount5_7,
+        employeesCount: input.employeesCount,
         targetPrice0_4: input.targetPrice0_4,
         targetPrice5_7: input.targetPrice5_7,
       })
@@ -722,13 +828,17 @@ export async function createOrUpdateMenu(input: DailyMenuInput) {
           mealType: item.mealType,
           outputWeight0_4: item.outputWeight0_4,
           outputWeight5_7: item.outputWeight5_7,
+          outputWeightEmployees: item.outputWeightEmployees,
         }))
       )
       .returning({ id: menuItemRecipes.id });
 
     const overrideRows: Array<{
       menuItemId: number;
-      recipeIngredientId: number;
+      recipeIngredientId: number | null;
+      productId: number | null;
+      subRecipeId: number | null;
+      ageGroup: string | null;
       grossWeight: number;
       netWeight: number;
     }> = [];
@@ -756,27 +866,42 @@ export async function createOrUpdateMenu(input: DailyMenuInput) {
       );
 
       (item.overrides ?? []).forEach((override) => {
-        const original = defaults.get(override.recipeIngredientId);
-        if (!original) {
-          return;
-        }
-
         const grossWeight = ensureNonNegativeWeight(override.grossWeight, 'grossWeight');
         const netWeight = ensureNonNegativeWeight(override.netWeight, 'netWeight');
 
-        if (
-          round4(grossWeight) === round4(original.grossWeight) &&
-          round4(netWeight) === round4(original.netWeight)
-        ) {
-          return;
-        }
+        if (override.recipeIngredientId) {
+          const original = defaults.get(override.recipeIngredientId);
+          if (!original) {
+            return;
+          }
 
-        overrideRows.push({
-          menuItemId: insertedItem.id,
-          recipeIngredientId: override.recipeIngredientId,
-          grossWeight,
-          netWeight,
-        });
+          if (
+            round4(grossWeight) === round4(original.grossWeight) &&
+            round4(netWeight) === round4(original.netWeight)
+          ) {
+            return;
+          }
+
+          overrideRows.push({
+            menuItemId: insertedItem.id,
+            recipeIngredientId: override.recipeIngredientId,
+            productId: null,
+            subRecipeId: null,
+            ageGroup: null,
+            grossWeight,
+            netWeight,
+          });
+        } else if (override.productId) {
+          overrideRows.push({
+            menuItemId: insertedItem.id,
+            recipeIngredientId: null,
+            productId: override.productId,
+            subRecipeId: null,
+            ageGroup: override.ageGroup || 'common',
+            grossWeight,
+            netWeight,
+          });
+        }
       });
     }
 

@@ -149,6 +149,7 @@ export const getMenusReport = async (req: Request, res: Response) => {
       date: m.date,
       count0_4: m.childrenCount0_4,
       count5_7: m.childrenCount5_7,
+      employeesCount: m.employeesCount,
       childrenTotal: m.childrenCount0_4 + m.childrenCount5_7,
       status: m.isConfirmed ? 'Затверджено' : 'Чернетка',
     })));
@@ -327,7 +328,8 @@ export const getDetailedMenusReport = async (req: Request, res: Response) => {
       mealType: menuItemRecipes.mealType,
       dishName: recipes.name,
       count0_4: dailyMenus.childrenCount0_4,
-      count5_7: dailyMenus.childrenCount5_7
+      count5_7: dailyMenus.childrenCount5_7,
+      countEmployees: dailyMenus.employeesCount
     })
     .from(dailyMenus)
     .innerJoin(menuItemRecipes, eq(dailyMenus.id, menuItemRecipes.menuId))

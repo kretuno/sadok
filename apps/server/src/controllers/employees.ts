@@ -13,6 +13,7 @@ import {
   transferInventoryBetweenEmployees,
   updateEmployee,
 } from '../services/employees';
+import { logAuditEvent, getClientIp } from '../services/audit';
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -49,6 +50,16 @@ export const getInventoryRegistryHandler = async (req: AuthRequest, res: Respons
 export const createEmployeeHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await createEmployee(req.body);
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'create',
+      entity: 'employee',
+      entityId: data[0]?.id,
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -58,6 +69,16 @@ export const createEmployeeHandler = async (req: AuthRequest, res: Response) => 
 export const updateEmployeeHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await updateEmployee(Number(req.params.id), req.body);
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'update',
+      entity: 'employee',
+      entityId: Number(req.params.id),
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+
     res.json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -89,6 +110,16 @@ export const createInventoryForEmployeeHandler = async (req: AuthRequest, res: R
 export const createInventoryItemHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await createInventoryItem(req.body, req.user?.id);
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'create',
+      entity: 'inventory_item',
+      entityId: data.id,
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -106,6 +137,16 @@ export const reassignInventoryItemHandler = async (req: AuthRequest, res: Respon
       note: req.body.note,
       transferredByUserId: req.user?.id,
     });
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'reassign',
+      entity: 'inventory_item',
+      entityId: Number(req.body.inventoryId),
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+
     res.json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -115,6 +156,16 @@ export const reassignInventoryItemHandler = async (req: AuthRequest, res: Respon
 export const addEmployeeDocumentHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await addEmployeeDocument(Number(req.params.id), req.body);
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'create',
+      entity: 'employee_document',
+      entityId: Number(req.params.id),
+      newValue: { title: req.body.title, documentType: req.body.documentType },
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -130,6 +181,16 @@ export const transferInventoryBetweenEmployeesHandler = async (req: AuthRequest,
       note: req.body.note,
       transferredByUserId: req.user?.id,
     });
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'transfer',
+      entity: 'inventory_item',
+      entityId: Number(req.body.inventoryId),
+      newValue: { fromEmployeeId: Number(req.params.id), toEmployeeId: Number(req.body.toEmployeeId), note: req.body.note },
+      ipAddress: getClientIp(req),
+    });
+
     res.json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });

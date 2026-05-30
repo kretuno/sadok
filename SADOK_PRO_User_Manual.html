@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SADOK PRO - Посібник Користувача</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Mermaid.js for Diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'neutral',
+      securityLevel: 'loose'
+    });
+  </script>
+  <style>
+    :root {
+      --primary: #0057B7;
+      --primary-dark: #00428A;
+      --secondary: #FFD700;
+      --bg: #f8fafc;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --card-bg: #ffffff;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      display: flex;
+      min-h: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 300px;
+      background-color: #ffffff;
+      border-right: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo-box {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: 1.5rem;
+      color: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--text);
+      letter-spacing: -0.025em;
+    }
+
+    .logo-text span {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: block;
+      margin-top: -0.25rem;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 0.925rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item a:hover {
+      color: var(--primary);
+      background-color: #f1f5f9;
+    }
+
+    .nav-item.active a {
+      color: var(--primary);
+      background-color: #eff6ff;
+      font-weight: 600;
+    }
+
+    /* Main Content Wrapper */
+    .content-wrapper {
+      margin-left: 300px;
+      flex: 1;
+      padding: 3rem 4rem;
+      max-width: 1100px;
+    }
+
+    /* Typography */
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: 2.75rem;
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #0f172a, var(--primary-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 1.125rem;
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-top: 3.5rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      position: relative;
+    }
+
+    h2::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 60px;
+      height: 2px;
+      background-color: var(--primary);
+    }
+
+    h3 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      margin-bottom: 1.5rem;
+      font-size: 1.05rem;
+      color: #334155;
+    }
+
+    /* GitHub Style Alerts */
+    .alert {
+      padding: 1.25rem 1.5rem;
+      border-radius: 16px;
+      border-left: 5px solid;
+      margin: 1.75rem 0;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .alert-icon {
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .alert-content {
+      font-size: 0.975rem;
+      color: #334155;
+    }
+
+    .alert-content strong {
+      color: #0f172a;
+    }
+
+    .alert-note {
+      background-color: #eff6ff;
+      border-color: #3b82f6;
+    }
+    .alert-note .alert-icon { color: #3b82f6; }
+
+    .alert-tip {
+      background-color: #f0fdf4;
+      border-color: #22c55e;
+    }
+    .alert-tip .alert-icon { color: #22c55e; }
+
+    .alert-important {
+      background-color: #fffbeb;
+      border-color: #f59e0b;
+    }
+    .alert-important .alert-icon { color: #f59e0b; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    th, td {
+      padding: 1rem 1.25rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: #0f172a;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.975rem;
+      color: #334155;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Images */
+    .image-container {
+      margin: 2.5rem 0;
+      background-color: #ffffff;
+      padding: 0.75rem;
+      border-radius: 24px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .image-container:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .image-container img {
+      width: 100%;
+      height: auto;
+      border-radius: 18px;
+      display: block;
+    }
+
+    .image-caption {
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 0.75rem;
+      font-weight: 500;
+    }
+
+    /* Mermaid Diagrams */
+    .mermaid-container {
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      margin: 2rem 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Custom UI Components for manual */
+    .btn-pdf {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: #dc2626;
+      color: #ffffff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      position: absolute;
+      top: 3rem;
+      right: 4rem;
+    }
+
+    .btn-pdf:hover {
+      background-color: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background-color: #ffffff;
+        color: #000000;
+      }
+
+      .sidebar {
+        display: none !important;
+      }
+
+      .content-wrapper {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+
+      .btn-pdf {
+        display: none !important;
+      }
+
+      h2 {
+        break-before: page;
+        margin-top: 2rem;
+      }
+
+      .image-container {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+      }
+
+      table {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+      }
+
+      tr {
+        page-break-inside: avoid;
+      }
+
+      .alert {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        background-color: #fff !important;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-box">S</div>
+      <div class="logo-text">SADOK PRO<span>Посібник Користувача</span></div>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item active"><a href="#intro"><i data-lucide="book-open"></i>1. Введення</a></li>
+      <li class="nav-item"><a href="#dashboard"><i data-lucide="gauge"></i>2. Панель керування</a></li>
+      <li class="nav-item"><a href="#children"><i data-lucide="users"></i>3. Діти та групи</a></li>
+      <li class="nav-item"><a href="#menu"><i data-lucide="receipt"></i>4. Меню та ціни</a></li>
+      <li class="nav-item"><a href="#stock"><i data-lucide="package"></i>5. Склад та FIFO</a></li>
+      <li class="nav-item"><a href="#other"><i data-lucide="heart-pulse"></i>6. Кабінети та майно</a></li>
+      <li class="nav-item"><a href="#backup"><i data-lucide="database"></i>7. Автобекапи</a></li>
+      <li class="nav-item"><a href="#activation"><i data-lucide="shield-check"></i>8. Ліцензування</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <main class="content-wrapper">
+    <!-- Save to PDF Button -->
+    <button class="btn-pdf" onclick="window.print()">
+      <i data-lucide="printer"></i> Друк у PDF
+    </button>
+
+    <header id="intro">
+      <h1>SADOK PRO: Повний посібник</h1>
+      <div class="subtitle">
+        <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10">v1.0.58</span>
+        <span>• Створено з любов'ю в Україні 🇺🇦</span>
+      </div>
+    </header>
+
+    <div class="image-container">
+      <img src="manual_assets/sadok_manual_cover.png" alt="Обкладинка SADOK PRO">
+      <div class="image-caption">Ілюстрація 1. Елегантний дизайн інтерфейсу та управління SADOK PRO</div>
+    </div>
+
+    <!-- Section 1 -->
+    <section>
+      <p>Ласкаво просимо до повного керівництва користувача системи управління закладом дошкільної освіти (ЗДО) <strong>SADOK PRO</strong>. Цей документ допоможе вам швидко опанувати всі можливості програми — від ведення карток дітей до складського обліку продуктів харчування та автоматичного формування звітності.</p>
+      
+      <div class="alert alert-note">
+        <div class="alert-icon"><i data-lucide="info"></i></div>
+        <div class="alert-content">
+          <strong>Особливість системи:</strong> Усі дані зберігаються у захищеній локальній базі даних SQLite. Програма розроблена на базі технологій Electron, Vite та Express і оптимізована для низького споживання пам'яті (до 512 МБ RAM).
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2 -->
+    <section id="dashboard">
+      <h2>2. Панель керування (Дашборд)</h2>
+      <p>Дашборд — це ваш головний екран, який відображає поточний стан закладу в реальному часі:</p>
+      <ul>
+        <li><strong>Метрики дня</strong>: Загальна кількість дітей, кількість присутніх вихованців на сьогодні, поточний стан складу.</li>
+        <li><strong>Аналітика витрат</strong>: Графік денних витрат на меню за тиждень та діаграма «Топ продуктів» за сумою списання.</li>
+        <li><strong>Сповіщення про безпеку</strong>: Розумне попередження про резервне копіювання. Якщо останній бекап бази даних був створений більше 2-х днів тому, система покаже яскравий помаранчевий банер із нагадуванням створити резервну копію.</li>
+      </ul>
+    </section>
+
+    <!-- Section 3 -->
+    <section id="children">
+      <h2>3. Розділ «Діти та групи» (Особові справи)</h2>
+      <p>Цей розділ призначений для детального обліку груп, вихованців ЗДО, а також швидкої навігації за статусами навчання.</p>
+
+      <div class="image-container">
+        <img src="manual_assets/sadok_child_profile.png" alt="Картка особової справи">
+        <div class="image-caption">Ілюстрація 2. Інтерфейс особової справи вихованця з вкладками</div>
+      </div>
+
+      <h3>3.1. Швидкі фільтри статусів</h3>
+      <p>Ви можете легко перемикати відображення дітей у таблиці:</p>
+      <ol>
+        <li><strong>Навчаються</strong> — тільки активні діти (основний список).</li>
+        <li><strong>Вибули / Архів</strong> — вихованці, які випустилися із садка або перейшли в інші заклади (із зазначенням дати та причини вибуття).</li>
+        <li><strong>Всі</strong> — загальний реєстр.</li>
+      </ol>
+
+      <h3>3.2. Внутрішня структура особової справи</h3>
+      <p>При натисканні на ім'я вихованця відкривається детальна модальна картка, яка містить чотири функціональні вкладки:</p>
+      <ul>
+        <li><strong>Вкладка 1: Загальне</strong>: Завантаження офіційного портрета дитини, внесення ПІБ, дати народження, статі, групи та приміток.</li>
+        <li><strong>Вкладка 2: Родина та документи</strong>: Контактні дані матері та батька, адреса проживання, свідоцтво про народження та пільгова категорія.</li>
+        <li><strong>Вкладка 3: Медична інтеграція</strong>: Група крові, резус-фактор, алергії, дієтичні обмеження, щеплення та вимірювання зросту/ваги.</li>
+        <li><strong>Вкладка 4: Персональний QR-код та Друк</strong>: Перегляд QR-коду дитини для автоматичного обліку відвідуваності та друк красивого бейджа дитини для носіння.</li>
+      </ul>
+    </section>
+
+    <!-- Section 4 -->
+    <section id="menu">
+      <h2>4. Розділ «Меню дня» та фінансовий розрахунок</h2>
+      <p>Модуль меню дня забезпечує повний цикл планування харчування відповідно до державних фізіологічних норм.</p>
+
+      <div class="mermaid-container">
+        <div class="mermaid">
+          graph TD
+            A[Вибір Дати] --> B[Внесення Страви з Довідника]
+            B --> C[Коригування Грамів для Виходу]
+            C --> D[Збереження Чернетки]
+            D --> E[Аналіз вартості та залишків]
+            E --> F[Підтвердження Меню - Списання FIFO]
+        </div>
+      </div>
+
+      <h3>4.1. Планування порцій та виходу страв</h3>
+      <p>Для кожного дня ви можете налаштувати вихід страв окремо для трьох вікових категорій:</p>
+      <ul>
+        <li><strong>Вихід 0-4, г</strong> — для дітей молодшої групи.</li>
+        <li><strong>Вихід 5-7, г</strong> — для дітей старшої групи.</li>
+        <li><strong>Вихід співр., г</strong> — для вихователів та персоналу.</li>
+      </ul>
+
+      <h3>4.2. Нова бухгалтерська форма «Меню-Вимога»</h3>
+      <p>Поруч зі стандартними друкованими формами реалізована кнопка <strong>«Меню-вимога»</strong> (іконка <code>FileText</code>), яка формує бухгалтерський документ у вигляді матриці.</p>
+
+      <div class="image-container">
+        <img src="manual_assets/sadok_print_menu.png" alt="Шаблон Меню-вимоги">
+        <div class="image-caption">Ілюстрація 3. Сформована Меню-вимога на видачу продуктів харчування</div>
+      </div>
+
+      <div class="alert alert-important">
+        <div class="alert-icon"><i data-lucide="alert-triangle"></i></div>
+        <div class="alert-content">
+          <strong>Важливо:</strong> Меню-вимога будується у вигляді зведеної матричної таблиці. По рядках виводяться продукти, а по стовпцях — прийоми їжі та конкретні страви. На перетині відображається точна вага брутто витраченого продукту. При виведенні на друк форма автоматично переходить в альбомний формат.
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5 -->
+    <section id="stock">
+      <h2>5. Склад продуктів та FIFO-списання</h2>
+      <p>Складський облік у <strong>SADOK PRO</strong> працює за строгими правилами бухгалтерського обліку:</p>
+      <ul>
+        <li><strong>FIFO (First In, First Out)</strong>: Продукти списуються за партіями в порядку їх надходження на склад (найперші за часом приходу).</li>
+        <li><strong>Контроль нестачі</strong>: При спробі підтвердити меню, на яке не вистачає продуктів, система заблокує операцію та детально покаже вікно зі списком відсутніх продуктів і точним обсягом нестачі. Прямо з цього вікна можна створити швидку прихідну накладну.</li>
+      </ul>
+    </section>
+
+    <!-- Section 6 -->
+    <section id="other">
+      <h2>6. Медкабінет, Комунальні послуги та Майно</h2>
+      <h3>6.1. Медкабінет</h3>
+      <p>Ведення медичних карток дітей, детальний облік щеплень та перенесених інфекційних захворювань. Також реалізовано контроль термінів придатності медикаментів в аптечці ЗДО.</p>
+
+      <h3>6.2. Комунальні послуги</h3>
+      <p>Облік лічильників (вода, електроенергія, газ, тепло) за локаціями з веденням історії показань та автоматичним розрахунком сум до оплати за тарифами.</p>
+
+      <h3>6.3. Майно садка (ТМЦ)</h3>
+      <p>Загальний реєстр матеріальних цінностей (меблі, техніка, ігрові майданчики, дерева на території садка). Можливість швидкого переміщення майна (передачі відповідальності) між співробітниками.</p>
+    </section>
+
+    <!-- Section 7 -->
+    <section id="backup">
+      <h2>7. Система резервного копіювання (Автобекапи)</h2>
+      <p>Для забезпечення цілісності даних у <strong>SADOK PRO</strong> реалізовано автоматичну систему резервного копіювання:</p>
+      <div class="alert alert-tip">
+        <div class="alert-icon"><i data-lucide="check-circle"></i></div>
+        <div class="alert-content">
+          <strong>Порада:</strong> Резервні копії автоматично стискаються алгоритмом GZIP у формат <code>.sqlite.gz</code>, що економить до 90% місця на диску. Налаштувати час щоденного бекапу та ліміт зберігання файлів можна у вкладці налаштувань.
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 8 -->
+    <section id="activation">
+      <h2>8. Активація програми та ліцензування</h2>
+      <p><strong>SADOK PRO</strong> постачається з вбудованим генератором апаратних ліцензійних ключів на основі унікального ідентифікатора заліза (HWID):</p>
+      <ul>
+        <li><strong>Генерація запиту</strong>: Програма зчитує апаратний UUID комп'ютера та генерує 16-значний код запиту активації.</li>
+        <li><strong>Типи ліцензій</strong>: Демо (14 днів), Місячна, Квартальна, Піврічна, Річна та Пожиттєва (Lifetime).</li>
+      </ul>
+    </section>
+
+    <footer style="margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+      <p>© 2026 Osipix Studio. Всі права захищені.</p>
+      <p style="margin-top: 0.25rem;">Слава Україні! 🇺🇦</p>
+    </footer>
+  </main>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Active Navigation Highlight on Scroll
+    const sections = document.querySelectorAll('section, header');
+    const navItems = document.querySelectorAll('.nav-item');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (pageYOffset >= (sectionTop - 200)) {
+          current = section.getAttribute('id') || 'intro';
+        }
+      });
+
+      navItems.forEach(item => {
+        item.classList.remove('active');
+        const link = item.querySelector('a').getAttribute('href').substring(1);
+        if (link === current) {
+          item.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

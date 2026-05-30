@@ -10,6 +10,7 @@ import {
   updateRecipe,
   updateRecipeIngredient,
 } from '../services/recipes';
+import { logAuditEvent, getClientIp } from '../services/audit';
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -45,6 +46,16 @@ export const getRecipeByIdHandler = async (req: AuthRequest, res: Response) => {
 export const createRecipeHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await createRecipe(req.body);
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'create',
+      entity: 'recipe',
+      entityId: data.recipe.id,
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+
     res.status(201).json(data);
   } catch (error) {
     res.status(400).json({ message: getErrorMessage(error) });
@@ -54,6 +65,16 @@ export const createRecipeHandler = async (req: AuthRequest, res: Response) => {
 export const updateRecipeHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await updateRecipe(Number(req.params.id), req.body);
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'update',
+      entity: 'recipe',
+      entityId: Number(req.params.id),
+      newValue: req.body,
+      ipAddress: getClientIp(req),
+    });
+
     res.json(data);
   } catch (error) {
     const message = getErrorMessage(error);
@@ -64,6 +85,16 @@ export const updateRecipeHandler = async (req: AuthRequest, res: Response) => {
 export const deleteRecipeHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await deleteRecipe(Number(req.params.id));
+
+    await logAuditEvent({
+      userId: req.user?.id,
+      actionType: 'delete',
+      entity: 'recipe',
+      entityId: Number(req.params.id),
+      newValue: { status: 'deleted' },
+      ipAddress: getClientIp(req),
+    });
+
     res.json(data);
   } catch (error) {
     const message = getErrorMessage(error);

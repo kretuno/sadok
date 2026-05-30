@@ -4,6 +4,10 @@ const fs = require('fs');
 const dgram = require('dgram');
 const os = require('os');
 const { spawn } = require('child_process');
+
+// Обмеження використання оперативної пам'яті (RAM) для процесів Electron
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=256');
+
 let mainWindow;
 let serverProcess;
 let discoverySocket;
@@ -206,7 +210,7 @@ function startServer() {
   console.log('[Electron] Starting production server...');
   const serverPath = getServerEntryPath();
   
-  serverProcess = spawn(process.execPath, [serverPath], {
+  serverProcess = spawn(process.execPath, ['--max-old-space-size=128', serverPath], {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',

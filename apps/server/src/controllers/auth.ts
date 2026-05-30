@@ -6,7 +6,11 @@ import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { getClientIp, logAuditEvent } from '../services/audit';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-sadok';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('CRITICAL CONFIGURATION ERROR: JWT_SECRET environment variable is not defined!');
+  process.exit(1);
+}
 
 export const register = async (req: Request, res: Response) => {
   try {

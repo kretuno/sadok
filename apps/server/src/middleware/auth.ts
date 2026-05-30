@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-sadok';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('CRITICAL CONFIGURATION ERROR: JWT_SECRET environment variable is not defined!');
+  process.exit(1);
+}
 
 export interface AuthRequest extends Request {
   user?: {

@@ -18,6 +18,7 @@ import {
   Sandwich,
   Trash2,
   Utensils,
+  FileText,
 } from 'lucide-react';
 import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
 import { uk } from 'date-fns/locale';
@@ -34,6 +35,12 @@ const mealTypes = [
   { id: 'snack', name: 'Полуденок', icon: <Sandwich size={16} /> },
   { id: 'dinner', name: 'Вечеря', icon: <Utensils size={16} /> },
 ];
+
+const formatIngredientUnit = (unit: string) => {
+  if (unit === 'кг') return 'г';
+  if (unit === 'л') return 'мл';
+  return unit;
+};
 
 interface ProductOption {
   id: number;
@@ -106,6 +113,7 @@ interface DailyMenuSummary {
   date: string;
   childrenCount0_4: number;
   childrenCount5_7: number;
+  employeesCount: number;
   targetPrice0_4?: number | null;
   targetPrice5_7?: number | null;
   isConfirmed: boolean;
@@ -115,7 +123,9 @@ interface DailyMenuSummary {
 }
 
 interface MenuIngredientAdjustmentRow {
-  recipeIngredientId: number;
+  recipeIngredientId: number | null;
+  productId?: number | null;
+  subRecipeId?: number | null;
   sourceType: 'product' | 'recipe';
   sourceName: string;
   ageGroup: string;
@@ -131,6 +141,7 @@ interface MenuItemRow {
   mealType: string;
   outputWeight0_4: string;
   outputWeight5_7: string;
+  outputWeightEmployees: string;
   adjustments?: MenuIngredientAdjustmentRow[];
   adjustmentsExpanded?: boolean;
 }
@@ -140,6 +151,7 @@ interface MenuAnalysis {
   date: string;
   childrenCount0_4: number;
   childrenCount5_7: number;
+  employeesCount: number;
   targetPrice0_4?: number | null;
   targetPrice5_7?: number | null;
   isConfirmed: boolean;
@@ -156,6 +168,7 @@ interface MenuAnalysis {
     defaultOutputWeight: number;
     outputWeight0_4?: number | null;
     outputWeight5_7?: number | null;
+    outputWeightEmployees?: number | null;
     hasAdjustments: boolean;
     adjustmentsCount: number;
     ingredientAdjustments: Array<{
@@ -176,17 +189,21 @@ interface MenuAnalysis {
       unit: string;
       grossQuantity0_4: number;
       grossQuantity5_7: number;
+      grossQuantityEmployees: number;
       netQuantity0_4: number;
       netQuantity5_7: number;
+      netQuantityEmployees: number;
       totalGrossQuantity: number;
       totalNetQuantity: number;
       unitPrice: number;
       cost0_4: number;
       cost5_7: number;
+      costEmployees: number;
       totalCost: number;
     }>;
     cost0_4: number;
     cost5_7: number;
+    costEmployees: number;
   }>;
   summaryNeeds?: Array<{
     productId: number;
@@ -194,21 +211,27 @@ interface MenuAnalysis {
     unit: string;
     grossQuantity0_4: number;
     grossQuantity5_7: number;
+    grossQuantityEmployees: number;
     netQuantity0_4: number;
     netQuantity5_7: number;
+    netQuantityEmployees: number;
     totalGrossQuantity: number;
     totalNetQuantity: number;
     unitPrice: number;
     cost0_4: number;
     cost5_7: number;
+    costEmployees: number;
     totalCost: number;
   }>;
   totals?: {
     totalChildren: number;
+    totalEmployees: number;
     costPerChild0_4: number;
     costPerChild5_7: number;
+    costPerEmployee: number;
     totalCost0_4: number;
     totalCost5_7: number;
+    totalCostEmployees: number;
     totalCostAll: number;
   };
 }
@@ -218,6 +241,7 @@ const emptyMenuItemRow = (mealType: string): MenuItemRow => ({
   recipeId: '',
   outputWeight0_4: '',
   outputWeight5_7: '',
+  outputWeightEmployees: '',
   adjustments: [],
   adjustmentsExpanded: false,
 });
@@ -256,6 +280,12 @@ const MenuPage: React.FC = () => {
   const [ingredientRows, setIngredientRows] = useState<any[]>([
     { sourceType: 'product', sourceId: '', ageGroup: 'common', weight: '' },
   ]);
+  const [addingIngredientToRowIdx, setAddingIngredientToRowIdx] = useState<number | null>(null);
+  const [newIngredientForm, setNewIngredientForm] = useState<{
+    productId: string;
+    ageGroup: string;
+    weight: string;
+  }>({ productId: '', ageGroup: 'common', weight: '' });
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedDate, setSelectedDate] = useState(() => new Date());
@@ -264,6 +294,7 @@ const MenuPage: React.FC = () => {
   const [menuForm, setMenuForm] = useState({
     childrenCount0_4: '0',
     childrenCount5_7: '0',
+    employeesCount: '0',
     targetPrice0_4: '50',
     targetPrice5_7: '65',
     isConfirmed: false,
@@ -278,7 +309,7 @@ const MenuPage: React.FC = () => {
   const [missingStockItems, setMissingStockItems] = useState<MissingStockItem[]>([]);
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [isManualRestockModalOpen, setIsManualRestockModalOpen] = useState(false);
-  const [printPreview, setPrintPreview] = useState<{ type: 'parents' | 'kitchen'; data: any } | null>(null);
+  const [printPreview, setPrintPreview] = useState<{ type: 'parents' | 'kitchen' | 'requirement'; data: any } | null>(null);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
   const [restockForm, setRestockForm] = useState({
     invoiceNumber: '',
@@ -338,6 +369,7 @@ const MenuPage: React.FC = () => {
     menuForm.isConfirmed,
     menuForm.childrenCount0_4,
     menuForm.childrenCount5_7,
+    menuForm.employeesCount,
     menuForm.targetPrice0_4,
     menuForm.targetPrice5_7,
     menuItemRows,
@@ -451,17 +483,20 @@ const MenuPage: React.FC = () => {
   const getScaledRecipeCost = (
     recipe: RecipeSummary | undefined,
     row: MenuItemRow,
-    ageGroup: '0-4' | '5-7'
+    ageGroup: '0-4' | '5-7' | 'employees'
   ) => {
     if (!recipe) {
       return 0;
     }
 
-    const baseCost = Number(recipe.cost.byAgeGroup[ageGroup] || 0);
+    const recipeAgeGroup = ageGroup === 'employees' ? '5-7' : ageGroup;
+    const baseCost = Number(recipe.cost.byAgeGroup[recipeAgeGroup] || 0);
     const defaultOutputWeight = Number(recipe.outputWeight || 0);
     const selectedOutputWeight = ageGroup === '0-4'
       ? Number(row.outputWeight0_4 || recipe.outputWeight || 0)
-      : Number(row.outputWeight5_7 || recipe.outputWeight || 0);
+      : ageGroup === '5-7'
+        ? Number(row.outputWeight5_7 || recipe.outputWeight || 0)
+        : Number(row.outputWeightEmployees || recipe.outputWeight || 0);
 
     if (defaultOutputWeight > 0 && selectedOutputWeight > 0) {
       return baseCost * (selectedOutputWeight / defaultOutputWeight);
@@ -473,6 +508,7 @@ const MenuPage: React.FC = () => {
   const approximateMenuCost = useMemo(() => {
     let cost0_4 = 0;
     let cost5_7 = 0;
+    let costEmployees = 0;
 
     menuItemRows.forEach((row) => {
       const recipe = recipes.find((item) => item.id === Number(row.recipeId));
@@ -482,17 +518,20 @@ const MenuPage: React.FC = () => {
 
       cost0_4 += getScaledRecipeCost(recipe, row, '0-4');
       cost5_7 += getScaledRecipeCost(recipe, row, '5-7');
+      costEmployees += getScaledRecipeCost(recipe, row, 'employees');
     });
 
     return {
       cost0_4,
       cost5_7,
+      costEmployees,
       totalCostAll: (
         cost0_4 * Number(menuForm.childrenCount0_4) +
-        cost5_7 * Number(menuForm.childrenCount5_7)
+        cost5_7 * Number(menuForm.childrenCount5_7) +
+        costEmployees * Number(menuForm.employeesCount)
       ),
     };
-  }, [menuItemRows, recipes, menuForm.childrenCount0_4, menuForm.childrenCount5_7]);
+  }, [menuItemRows, recipes, menuForm.childrenCount0_4, menuForm.childrenCount5_7, menuForm.employeesCount]);
 
   const effectiveMenuAnalysis = hasUnsavedMenuChanges ? previewAnalysis : menuAnalysis;
 
@@ -500,6 +539,7 @@ const MenuPage: React.FC = () => {
     ? {
       cost0_4: effectiveMenuAnalysis.totals.costPerChild0_4,
       cost5_7: effectiveMenuAnalysis.totals.costPerChild5_7,
+      costEmployees: effectiveMenuAnalysis.totals.costPerEmployee,
       totalCostAll: effectiveMenuAnalysis.totals.totalCostAll,
     }
     : approximateMenuCost;
@@ -508,10 +548,13 @@ const MenuPage: React.FC = () => {
     ? effectiveMenuAnalysis.totals
     : {
       totalChildren: Number(menuForm.childrenCount0_4) + Number(menuForm.childrenCount5_7),
+      totalEmployees: Number(menuForm.employeesCount),
       costPerChild0_4: displayedTotals.cost0_4,
       costPerChild5_7: displayedTotals.cost5_7,
+      costPerEmployee: (displayedTotals as any).costEmployees ?? 0,
       totalCost0_4: displayedTotals.cost0_4 * Number(menuForm.childrenCount0_4),
       totalCost5_7: displayedTotals.cost5_7 * Number(menuForm.childrenCount5_7),
+      totalCostEmployees: ((displayedTotals as any).costEmployees ?? 0) * Number(menuForm.employeesCount),
       totalCostAll: displayedTotals.totalCostAll,
     };
   const effectiveMenuItems = effectiveMenuAnalysis?.items ?? [];
@@ -786,6 +829,7 @@ const MenuPage: React.FC = () => {
         setMenuForm({
           childrenCount0_4: '0',
           childrenCount5_7: '0',
+          employeesCount: '0',
           targetPrice0_4: '50',
           targetPrice5_7: '65',
           isConfirmed: false,
@@ -809,6 +853,7 @@ const MenuPage: React.FC = () => {
       setMenuForm({
         childrenCount0_4: String(menu.childrenCount0_4),
         childrenCount5_7: String(menu.childrenCount5_7),
+        employeesCount: String(menu.employeesCount ?? '0'),
         targetPrice0_4: String(menu.targetPrice0_4 || '50'),
         targetPrice5_7: String(menu.targetPrice5_7 || '65'),
         isConfirmed: Boolean(menu.isConfirmed),
@@ -820,6 +865,7 @@ const MenuPage: React.FC = () => {
           mealType: item.mealType,
           outputWeight0_4: String(item.outputWeight0_4 || ''),
           outputWeight5_7: String(item.outputWeight5_7 || ''),
+          outputWeightEmployees: String(item.outputWeightEmployees || ''),
           adjustmentsExpanded: false,
           adjustments: (item.ingredientAdjustments || []).map((adjustment) => ({
             recipeIngredientId: adjustment.recipeIngredientId,
@@ -839,11 +885,31 @@ const MenuPage: React.FC = () => {
   };
 
   const updateMenuField = (field: keyof typeof menuForm, value: string | boolean) => {
+    let sanitizedValue = value;
+
+    if (typeof value === 'string') {
+      if (field === 'childrenCount0_4' || field === 'childrenCount5_7' || field === 'employeesCount') {
+        sanitizedValue = value.replace(/\D/g, '');
+        if (sanitizedValue === '') {
+          sanitizedValue = '0';
+        } else {
+          // Убираем лидирующие нули (например, "05" -> "5")
+          sanitizedValue = String(Number(sanitizedValue));
+        }
+      } else if (field === 'targetPrice0_4' || field === 'targetPrice5_7') {
+        sanitizedValue = value.replace(/[^0-9.]/g, '');
+        const parts = sanitizedValue.split('.');
+        if (parts.length > 2) {
+          sanitizedValue = parts[0] + '.' + parts.slice(1).join('');
+        }
+      }
+    }
+
     setPreviewAnalysis(null);
     setHasUnsavedMenuChanges(true);
     setMenuForm((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: sanitizedValue,
     }));
   };
 
@@ -894,6 +960,7 @@ const MenuPage: React.FC = () => {
       setMenuForm({
         childrenCount0_4: String(savedMenu.childrenCount0_4),
         childrenCount5_7: String(savedMenu.childrenCount5_7),
+        employeesCount: String(savedMenu.employeesCount ?? '0'),
         targetPrice0_4: String(savedMenu.targetPrice0_4 || '50'),
         targetPrice5_7: String(savedMenu.targetPrice5_7 || '65'),
         isConfirmed: Boolean(savedMenu.isConfirmed),
@@ -906,6 +973,7 @@ const MenuPage: React.FC = () => {
           mealType: item.mealType,
           outputWeight0_4: String(item.outputWeight0_4 || ''),
           outputWeight5_7: String(item.outputWeight5_7 || ''),
+          outputWeightEmployees: String(item.outputWeightEmployees || ''),
           adjustmentsExpanded: false,
           adjustments: (item.ingredientAdjustments || []).map((adjustment) => ({
             recipeIngredientId: adjustment.recipeIngredientId,
@@ -933,6 +1001,7 @@ const MenuPage: React.FC = () => {
     date: format(selectedDate, 'yyyy-MM-dd'),
     childrenCount0_4: Number(menuForm.childrenCount0_4),
     childrenCount5_7: Number(menuForm.childrenCount5_7),
+    employeesCount: Number(menuForm.employeesCount),
     targetPrice0_4: Number(menuForm.targetPrice0_4),
     targetPrice5_7: Number(menuForm.targetPrice5_7),
     items: menuItemRows
@@ -942,12 +1011,17 @@ const MenuPage: React.FC = () => {
         mealType: row.mealType,
         outputWeight0_4: row.outputWeight0_4 ? Number(row.outputWeight0_4) : null,
         outputWeight5_7: row.outputWeight5_7 ? Number(row.outputWeight5_7) : null,
+        outputWeightEmployees: row.outputWeightEmployees ? Number(row.outputWeightEmployees) : null,
         overrides: (row.adjustments || [])
           .filter((adjustment) =>
+            adjustment.recipeIngredientId === null ||
             Number(adjustment.weight) !== adjustment.defaultWeight
           )
           .map((adjustment) => ({
             recipeIngredientId: adjustment.recipeIngredientId,
+            productId: adjustment.productId || null,
+            subRecipeId: adjustment.subRecipeId || null,
+            ageGroup: adjustment.ageGroup || 'common',
             grossWeight: Number(adjustment.weight),
             netWeight: Number(adjustment.weight),
           })),
@@ -1152,7 +1226,7 @@ const MenuPage: React.FC = () => {
     }
   };
 
-  const handlePrint = async (type: 'parents' | 'kitchen') => {
+  const handlePrint = async (type: 'parents' | 'kitchen' | 'requirement') => {
     try {
       if (!currentMenuId) {
         setError('Спочатку збережіть меню на цей день');
@@ -1467,7 +1541,7 @@ const MenuPage: React.FC = () => {
           setPrintPreview(null);
           setIsPreparingPrint(false);
         }}
-        title={printPreview?.type === 'kitchen' ? 'Розкладка кухні' : 'Звітне меню'}
+        title={printPreview?.type === 'kitchen' ? 'Розкладка кухні' : printPreview?.type === 'requirement' ? 'Меню-вимога' : 'Звітне меню'}
         maxWidth="5xl"
       >
         <div className="space-y-4">
@@ -1586,6 +1660,9 @@ const MenuPage: React.FC = () => {
                   <button onClick={() => handlePrint('kitchen')} className="ui-button-secondary border-orange-200 px-4 text-orange-700 hover:bg-orange-50">
                     <Utensils size={16} /> Розкладка кухні
                   </button>
+                  <button onClick={() => handlePrint('requirement')} className="ui-button-secondary border-purple-200 px-4 text-purple-700 hover:bg-purple-50">
+                    <FileText size={16} /> Меню-вимога
+                  </button>
                   <button
                     disabled={saving || menuForm.isConfirmed}
                     onClick={handleSaveMenu}
@@ -1621,7 +1698,7 @@ const MenuPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-4">
+              <div className="grid gap-6 md:grid-cols-5">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-gray-400">Дітей 0-4 р.</label>
                   <input
@@ -1643,26 +1720,34 @@ const MenuPage: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-gray-400">Ціль грн на 1 дитину (0-4)</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-gray-400">Співробітники</label>
+                  <input
+                    type="number"
+                    value={menuForm.employeesCount}
+                    disabled={menuForm.isConfirmed}
+                    onChange={(event) => updateMenuField('employeesCount', event.target.value)}
+                    className="ui-input text-lg font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-gray-400">Ціль на 1 дит. (0-4)</label>
                   <input
                     type="number"
                     value={menuForm.targetPrice0_4}
                     disabled={menuForm.isConfirmed}
                     onChange={(event) => updateMenuField('targetPrice0_4', event.target.value)}
-                    className="ui-input"
+                    className="ui-input text-lg font-bold"
                   />
-                  <p className="text-[10px] text-gray-500">Добова цільова сума у гривнях на одну дитину віком 0-4 роки.</p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-gray-400">Ціль грн на 1 дитину (5-7)</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-gray-400">Ціль на 1 дит. (5-7)</label>
                   <input
                     type="number"
                     value={menuForm.targetPrice5_7}
                     disabled={menuForm.isConfirmed}
                     onChange={(event) => updateMenuField('targetPrice5_7', event.target.value)}
-                    className="ui-input"
+                    className="ui-input text-lg font-bold"
                   />
-                  <p className="text-[10px] text-gray-500">Добова цільова сума у гривнях на одну дитину віком 5-7 років.</p>
                 </div>
               </div>
 
@@ -1716,6 +1801,7 @@ const MenuPage: React.FC = () => {
                                       recipeId: String(value),
                                       outputWeight0_4: currentRow.outputWeight0_4 || String(nextRecipe?.outputWeight || ''),
                                       outputWeight5_7: currentRow.outputWeight5_7 || String(nextRecipe?.outputWeight || ''),
+                                      outputWeightEmployees: currentRow.outputWeightEmployees || String(nextRecipe?.outputWeight || ''),
                                       adjustments: [],
                                       adjustmentsExpanded: false,
                                     }));
@@ -1723,9 +1809,9 @@ const MenuPage: React.FC = () => {
                                   placeholder="Оберіть страву"
                                 />
                               </div>
-                              <div className="w-32 space-y-1">
+                              <div className="w-36 space-y-1">
                                 <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400">
-                                  Вага порції 0-4, г
+                                  Вихід 0-4, г
                                 </label>
                                 <input
                                   placeholder="Вихід 0-4"
@@ -1738,9 +1824,9 @@ const MenuPage: React.FC = () => {
                                   className="ui-input text-center text-xs"
                                 />
                               </div>
-                              <div className="w-32 space-y-1">
+                              <div className="w-36 space-y-1">
                                 <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400">
-                                  Вага порції 5-7, г
+                                  Вихід 5-7, г
                                 </label>
                                 <input
                                   placeholder="Вихід 5-7"
@@ -1753,11 +1839,26 @@ const MenuPage: React.FC = () => {
                                   className="ui-input text-center text-xs"
                                 />
                               </div>
-                              <div className="w-36 pt-2 text-right">
-                                <div className="text-sm font-black text-gray-800">
-                                  {recipe ? formatMoney(getScaledRecipeCost(recipe, row, '5-7')) : '—'}
+                              <div className="w-40 space-y-1">
+                                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400">
+                                  Вихід співр., г
+                                </label>
+                                <input
+                                  placeholder="Вихід співр."
+                                  value={row.outputWeightEmployees}
+                                  disabled={menuForm.isConfirmed}
+                                  onChange={(event) => updateMenuItemRow(realIdx, (currentRow) => ({
+                                    ...currentRow,
+                                    outputWeightEmployees: event.target.value,
+                                  }))}
+                                  className="ui-input text-center text-xs"
+                                />
+                              </div>
+                              <div className="w-48 pt-2 text-right">
+                                <div className="text-[11px] font-black text-gray-800 leading-tight">
+                                  {recipe ? `${formatMoney(getScaledRecipeCost(recipe, row, '0-4'))} / ${formatMoney(getScaledRecipeCost(recipe, row, '5-7'))} / ${formatMoney(getScaledRecipeCost(recipe, row, 'employees'))}` : '—'}
                                 </div>
-                                <div className="text-[10px] font-bold uppercase text-gray-400">ціна 5-7, орієнтовно</div>
+                                <div className="text-[9px] font-bold uppercase text-gray-400 mt-1">ціна 0-4 / 5-7 / співр.</div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <button
@@ -1824,47 +1925,213 @@ const MenuPage: React.FC = () => {
                                         <th className="py-2 pr-3">Група</th>
                                         <th className="py-2 pr-3 text-right">Кількість базова</th>
                                         <th className="py-2 pr-3 text-right">Кількість на сьогодні</th>
+                                        <th className="py-2 pr-3 text-right">Дії</th>
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {(row.adjustments || []).map((adjustment, adjustmentIndex) => (
-                                        <tr key={`${adjustment.recipeIngredientId}-${adjustmentIndex}`} className="border-b border-gray-50">
-                                          <td className="py-3 pr-3">
-                                            <div className="font-semibold text-gray-800">{adjustment.sourceName}</div>
-                                            <div className="text-[11px] text-gray-400">
-                                              {adjustment.sourceType === 'product' ? `Продукт, ${adjustment.unit}` : 'Підрецепт'}
+                                      {(row.adjustments || []).map((adjustment, adjustmentIndex) => {
+                                        const isDeleted = Number(adjustment.weight) === 0;
+                                        return (
+                                          <tr key={`${adjustment.recipeIngredientId || 'new'}-${adjustmentIndex}`} className={`border-b border-gray-50 transition-all ${isDeleted ? 'opacity-40 bg-gray-50/50' : ''}`}>
+                                            <td className="py-3 pr-3">
+                                              <div className="font-semibold text-gray-800">{adjustment.sourceName}</div>
+                                              <div className="text-[11px] text-gray-400">
+                                                {adjustment.sourceType === 'product' ? `Продукт, ${formatIngredientUnit(adjustment.unit)}` : 'Підрецепт'}
+                                              </div>
+                                            </td>
+                                            <td className="py-3 pr-3">
+                                              <span className="rounded-full bg-gray-100 px-2 py-1 text-[11px] font-bold uppercase text-gray-500">
+                                                {adjustment.ageGroup === 'common' ? 'загальна' : adjustment.ageGroup}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 pr-3 text-right font-semibold text-gray-600">{adjustment.defaultWeight} {formatIngredientUnit(adjustment.unit)}</td>
+                                            <td className="py-3 pr-3">
+                                              <input
+                                                value={adjustment.weight}
+                                                disabled={menuForm.isConfirmed || isDeleted}
+                                                onChange={(event) => updateMenuItemRow(realIdx, (currentRow) => ({
+                                                  ...currentRow,
+                                                  adjustments: (currentRow.adjustments || []).map((rowAdjustment, rowAdjustmentIndex) => (
+                                                    rowAdjustmentIndex === adjustmentIndex
+                                                      ? {
+                                                        ...rowAdjustment,
+                                                        weight: event.target.value,
+                                                        isAdjusted: Number(event.target.value) !== rowAdjustment.defaultWeight,
+                                                      }
+                                                      : rowAdjustment
+                                                  )),
+                                                }))}
+                                                className="ui-input h-10 text-right text-sm"
+                                              />
+                                            </td>
+                                            <td className="py-3 pr-3 text-right">
+                                              {isDeleted ? (
+                                                <button
+                                                  type="button"
+                                                  disabled={menuForm.isConfirmed}
+                                                  onClick={() => {
+                                                    updateMenuItemRow(realIdx, (currentRow) => ({
+                                                      ...currentRow,
+                                                      adjustments: (currentRow.adjustments || []).map((rowAdjustment, rowAdjustmentIndex) => (
+                                                        rowAdjustmentIndex === adjustmentIndex
+                                                          ? {
+                                                            ...rowAdjustment,
+                                                            weight: String(rowAdjustment.defaultWeight),
+                                                            isAdjusted: false,
+                                                          }
+                                                          : rowAdjustment
+                                                      )),
+                                                    }));
+                                                  }}
+                                                  className="rounded-lg p-1.5 text-sky-500 hover:bg-sky-50 transition"
+                                                  title="Відновити інгредієнт"
+                                                >
+                                                  <RotateCcw size={14} />
+                                                </button>
+                                              ) : (
+                                                <button
+                                                  type="button"
+                                                  disabled={menuForm.isConfirmed}
+                                                  onClick={() => {
+                                                    if (adjustment.recipeIngredientId !== null) {
+                                                      updateMenuItemRow(realIdx, (currentRow) => ({
+                                                        ...currentRow,
+                                                        adjustments: (currentRow.adjustments || []).map((rowAdjustment, rowAdjustmentIndex) => (
+                                                          rowAdjustmentIndex === adjustmentIndex
+                                                            ? {
+                                                              ...rowAdjustment,
+                                                              weight: '0',
+                                                              isAdjusted: true,
+                                                            }
+                                                            : rowAdjustment
+                                                        )),
+                                                      }));
+                                                    } else {
+                                                      updateMenuItemRow(realIdx, (currentRow) => ({
+                                                        ...currentRow,
+                                                        adjustments: (currentRow.adjustments || []).filter((_, rowAdjustmentIndex) => rowAdjustmentIndex !== adjustmentIndex),
+                                                      }));
+                                                    }
+                                                    setHasUnsavedMenuChanges(true);
+                                                  }}
+                                                  className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition"
+                                                  title="Видалити інгредієнт"
+                                                >
+                                                  <Trash2 size={14} />
+                                                </button>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+
+                                      {addingIngredientToRowIdx === realIdx && (
+                                        <tr className="bg-sky-50/50">
+                                          <td className="py-2 pr-3">
+                                            <select
+                                              value={newIngredientForm.productId}
+                                              onChange={(e) => setNewIngredientForm(prev => ({ ...prev, productId: e.target.value }))}
+                                              className="ui-input h-10 w-full text-xs"
+                                            >
+                                              <option value="">-- Оберіть продукт --</option>
+                                              {products.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                              ))}
+                                            </select>
+                                          </td>
+                                          <td className="py-2 pr-3">
+                                            <select
+                                              value={newIngredientForm.ageGroup}
+                                              onChange={(e) => setNewIngredientForm(prev => ({ ...prev, ageGroup: e.target.value }))}
+                                              className="ui-input h-10 w-full text-xs"
+                                            >
+                                              <option value="common">загальна</option>
+                                              <option value="0-4">0-4</option>
+                                              <option value="5-7">5-7</option>
+                                            </select>
+                                          </td>
+                                          <td className="py-2 pr-3 text-right text-xs text-gray-500 font-bold">—</td>
+                                          <td className="py-2 pr-3">
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                              <input
+                                                type="text"
+                                                placeholder="вага"
+                                                value={newIngredientForm.weight}
+                                                onChange={(e) => setNewIngredientForm(prev => ({ ...prev, weight: e.target.value.replace(/\D/g, '') }))}
+                                                className="ui-input h-10 w-20 text-right text-xs"
+                                              />
+                                              <span className="text-[10px] text-gray-500 font-semibold">{newIngredientForm.productId ? formatIngredientUnit(products.find(p => p.id === Number(newIngredientForm.productId))?.unit || 'кг') : 'г'}</span>
                                             </div>
                                           </td>
-                                          <td className="py-3 pr-3">
-                                            <span className="rounded-full bg-gray-100 px-2 py-1 text-[11px] font-bold uppercase text-gray-500">
-                                              {adjustment.ageGroup === 'common' ? 'загальна' : adjustment.ageGroup}
-                                            </span>
-                                          </td>
-                                          <td className="py-3 pr-3 text-right font-semibold text-gray-600">{adjustment.defaultWeight} {adjustment.unit}</td>
-                                          <td className="py-3 pr-3">
-                                            <input
-                                              value={adjustment.weight}
-                                              disabled={menuForm.isConfirmed}
-                                              onChange={(event) => updateMenuItemRow(realIdx, (currentRow) => ({
-                                                ...currentRow,
-                                                adjustments: (currentRow.adjustments || []).map((rowAdjustment, rowAdjustmentIndex) => (
-                                                  rowAdjustmentIndex === adjustmentIndex
-                                                    ? {
-                                                      ...rowAdjustment,
-                                                      weight: event.target.value,
-                                                      isAdjusted: Number(event.target.value) !== rowAdjustment.defaultWeight,
-                                                    }
-                                                    : rowAdjustment
-                                                )),
-                                              }))}
-                                              className="ui-input h-10 text-right text-sm"
-                                            />
+                                          <td className="py-2 pr-3 text-right">
+                                            <div className="flex items-center gap-1 justify-end">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const prodId = Number(newIngredientForm.productId);
+                                                  const weightVal = Number(newIngredientForm.weight);
+                                                  if (!prodId || !weightVal) return;
+
+                                                  const selectedProduct = products.find(p => p.id === prodId);
+                                                  if (!selectedProduct) return;
+
+                                                  const newAdjustment: MenuIngredientAdjustmentRow = {
+                                                    recipeIngredientId: null,
+                                                    productId: prodId,
+                                                    subRecipeId: null,
+                                                    sourceType: 'product',
+                                                    sourceName: selectedProduct.name,
+                                                    ageGroup: newIngredientForm.ageGroup,
+                                                    unit: selectedProduct.unit,
+                                                    defaultWeight: 0,
+                                                    weight: String(weightVal),
+                                                    isAdjusted: true,
+                                                  };
+
+                                                  updateMenuItemRow(realIdx, (currentRow) => ({
+                                                    ...currentRow,
+                                                    adjustments: [...(currentRow.adjustments || []), newAdjustment],
+                                                  }));
+
+                                                  setAddingIngredientToRowIdx(null);
+                                                  setNewIngredientForm({ productId: '', ageGroup: 'common', weight: '' });
+                                                  setHasUnsavedMenuChanges(true);
+                                                }}
+                                                className="rounded-lg bg-sky-500 px-2 py-1 text-xs font-bold text-white hover:bg-sky-600 transition"
+                                              >
+                                                ОК
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setAddingIngredientToRowIdx(null);
+                                                  setNewIngredientForm({ productId: '', ageGroup: 'common', weight: '' });
+                                                }}
+                                                className="rounded-lg border border-gray-200 px-1.5 py-1 text-xs text-gray-500 hover:bg-gray-100 transition"
+                                              >
+                                                Х
+                                              </button>
+                                            </div>
                                           </td>
                                         </tr>
-                                      ))}
+                                      )}
                                     </tbody>
                                   </table>
                                 </div>
+                                {addingIngredientToRowIdx !== realIdx && !menuForm.isConfirmed && (
+                                  <div className="mt-3 flex justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setAddingIngredientToRowIdx(realIdx);
+                                        setNewIngredientForm({ productId: '', ageGroup: 'common', weight: '' });
+                                      }}
+                                      className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline"
+                                    >
+                                      <Plus size={14} /> Додати інгредієнт на сьогодні
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1902,14 +2169,16 @@ const MenuPage: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="grid gap-4 md:grid-cols-4">
+                  <div className="grid gap-4 md:grid-cols-5">
                     <div className="rounded-2xl bg-warm-50 p-4">
                       <div className="text-xs font-black uppercase tracking-wider text-warm-500">Страв у меню</div>
                       <div className="mt-2 text-3xl font-black text-gray-800">{effectiveMenuAnalysis.itemsCount}</div>
                     </div>
                     <div className="rounded-2xl bg-sky-50 p-4">
-                      <div className="text-xs font-black uppercase tracking-wider text-sky-500">Дітей у розрахунку</div>
-                      <div className="mt-2 text-3xl font-black text-gray-800">{analysisTotals.totalChildren}</div>
+                      <div className="text-xs font-black uppercase tracking-wider text-sky-500">Дітей / Співр.</div>
+                      <div className="mt-2 text-3xl font-black text-gray-800">
+                        {analysisTotals.totalChildren} / {analysisTotals.totalEmployees}
+                      </div>
                     </div>
                     <div className="rounded-2xl bg-emerald-50 p-4">
                       <div className="text-xs font-black uppercase tracking-wider text-emerald-600">Собівартість 0-4</div>
@@ -1918,6 +2187,10 @@ const MenuPage: React.FC = () => {
                     <div className="rounded-2xl bg-violet-50 p-4">
                       <div className="text-xs font-black uppercase tracking-wider text-violet-600">Собівартість 5-7</div>
                       <div className="mt-2 text-xl font-black text-gray-800">{formatMoney(analysisTotals.costPerChild5_7)}</div>
+                    </div>
+                    <div className="rounded-2xl bg-amber-50 p-4">
+                      <div className="text-xs font-black uppercase tracking-wider text-amber-600">Собівартість співр.</div>
+                      <div className="mt-2 text-xl font-black text-gray-800">{formatMoney(analysisTotals.costPerEmployee)}</div>
                     </div>
                   </div>
                 </div>
@@ -1950,7 +2223,9 @@ const MenuPage: React.FC = () => {
                                   <div className="mt-1 text-sm text-gray-500">
                                     Вихід: {item.outputWeight0_4 || item.defaultOutputWeight} г для 0-4 /
                                     {' '}
-                                    {item.outputWeight5_7 || item.defaultOutputWeight} г для 5-7
+                                    {item.outputWeight5_7 || item.defaultOutputWeight} г для 5-7 /
+                                    {' '}
+                                    {item.outputWeightEmployees || item.defaultOutputWeight} г для співр.
                                   </div>
                                   {item.hasAdjustments && (
                                     <div className="mt-2 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-black uppercase tracking-wider text-amber-700">
@@ -1994,6 +2269,7 @@ const MenuPage: React.FC = () => {
                                       <th className="py-2 pr-3 text-center">Од.</th>
                                       <th className="py-2 pr-3 text-right">Кількість 0-4</th>
                                       <th className="py-2 pr-3 text-right">Кількість 5-7</th>
+                                      <th className="py-2 pr-3 text-right">Кількість співр.</th>
                                       <th className="py-2 pr-3 text-right">Разом</th>
                                     </tr>
                                   </thead>
@@ -2004,6 +2280,7 @@ const MenuPage: React.FC = () => {
                                         <td className="py-3 pr-3 text-center text-gray-500">{product.unit}</td>
                                         <td className="py-3 pr-3 text-right">{formatQty(product.grossQuantity0_4)} {product.unit}</td>
                                         <td className="py-3 pr-3 text-right">{formatQty(product.grossQuantity5_7)} {product.unit}</td>
+                                        <td className="py-3 pr-3 text-right">{formatQty(product.grossQuantityEmployees)} {product.unit}</td>
                                         <td className="py-3 pr-3 text-right font-black text-gray-800">{formatQty(product.totalGrossQuantity)} {product.unit}</td>
                                       </tr>
                                     ))}
@@ -2055,6 +2332,7 @@ const MenuPage: React.FC = () => {
                           <th className="py-2 pr-3 text-center">Од.</th>
                           <th className="py-2 pr-3 text-right">Кількість 0-4</th>
                           <th className="py-2 pr-3 text-right">Кількість 5-7</th>
+                          <th className="py-2 pr-3 text-right">Кількість співр.</th>
                           <th className="py-2 pr-3 text-right">Разом</th>
                           <th className="py-2 pr-3 text-right">Сума</th>
                         </tr>
@@ -2066,6 +2344,7 @@ const MenuPage: React.FC = () => {
                             <td className="py-3 pr-3 text-center text-gray-500">{product.unit}</td>
                             <td className="py-3 pr-3 text-right">{formatQty(product.grossQuantity0_4)} {product.unit}</td>
                             <td className="py-3 pr-3 text-right">{formatQty(product.grossQuantity5_7)} {product.unit}</td>
+                            <td className="py-3 pr-3 text-right">{formatQty(product.grossQuantityEmployees)} {product.unit}</td>
                             <td className="py-3 pr-3 text-right font-black text-gray-800">{formatQty(product.totalGrossQuantity)} {product.unit}</td>
                             <td className="py-3 pr-3 text-right font-semibold text-gray-700">{formatMoney(product.totalCost)}</td>
                           </tr>

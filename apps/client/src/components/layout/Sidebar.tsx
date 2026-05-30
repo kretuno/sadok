@@ -17,10 +17,13 @@ import {
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const Sidebar: React.FC = () => {
   const { logout } = useAuth();
   const { t } = useTranslation();
+  const { settings } = useSettings();
+  const isExpired = settings?.isExpired === true;
 
   const menuItems = [
     { name: t('dashboard'), icon: <LayoutGrid size={20} />, path: '/' },
@@ -44,28 +47,45 @@ const Sidebar: React.FC = () => {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex w-full min-w-0 items-center gap-3 rounded-lg p-3 transition ${
-                isActive
-                  ? 'bg-warm-100 font-semibold text-warm-600'
-                  : 'text-gray-600 hover:bg-warm-50 hover:text-warm-600'
-              }`
-            }
-          >
-            <span className="shrink-0">{item.icon}</span>
-            <span className="truncate">{item.name}</span>
-          </NavLink>
-        ))}
+        {menuItems.map((item) => {
+          const isDisabled = isExpired && item.path !== '/settings';
+          return (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              onClick={(e) => {
+                if (isDisabled) {
+                  e.preventDefault();
+                }
+              }}
+              className={({ isActive }) =>
+                `flex w-full min-w-0 items-center gap-3 rounded-lg p-3 transition ${
+                  isDisabled
+                    ? 'opacity-40 cursor-not-allowed pointer-events-none'
+                    : isActive
+                    ? 'bg-warm-100 font-semibold text-warm-600'
+                    : 'text-gray-600 hover:bg-warm-50 hover:text-warm-600'
+                }`
+              }
+            >
+              <span className="shrink-0">{item.icon}</span>
+              <span className="truncate">{item.name}</span>
+            </NavLink>
+          );
+        })}
 
         <NavLink
           to="/about"
+          onClick={(e) => {
+            if (isExpired) {
+              e.preventDefault();
+            }
+          }}
           className={({ isActive }) =>
             `flex w-full min-w-0 items-center gap-3 rounded-lg p-3 transition ${
-              isActive
+              isExpired
+                ? 'opacity-40 cursor-not-allowed pointer-events-none'
+                : isActive
                 ? 'bg-warm-100 font-semibold text-warm-600'
                 : 'text-gray-600 hover:bg-warm-50 hover:text-warm-600'
             }`

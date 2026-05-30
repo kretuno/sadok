@@ -11,8 +11,8 @@ import zlib from 'zlib';
 import { getClientIp, logAuditEvent } from '../services/audit';
 import { dataDir } from '../paths';
 
-const LICENSE_SALT = 'SADOK-MACHINE-SALT-2026';
-const ACTIVATION_SECRET = 'SADOK-LICENSE-SECRET-V1';
+const LICENSE_SALT = process.env.LICENSE_SALT || 'SADOK-MACHINE-SALT-2026';
+const ACTIVATION_SECRET = process.env.ACTIVATION_SECRET || 'SADOK-LICENSE-SECRET-V1';
 const BACKUP_PREFIX = 'sadok_backup';
 
 const getDbPath = () => path.resolve(dataDir, 'sqlite.db');
@@ -55,7 +55,34 @@ const getBackupFilePath = (fileName: string) => {
   return resolved;
 };
 
-const createCompressedBackup = (label?: string) => {
+const rotateAutoBackups = async () => {
+  try {
+    const settings = await db.select().from(kindergartenSettings).where(eq(kindergartenSettings.id, 1)).limit(1);
+    const maxCount = settings[0]?.maxBackupsCount ?? 7;
+
+    const backupsDir = ensureBackupsDir();
+    const files = fs.readdirSync(backupsDir)
+      .filter((file) => file.startsWith(BACKUP_PREFIX) && file.endsWith('_auto.sqlite.gz'))
+      .map((file) => {
+        const fullPath = path.resolve(backupsDir, file);
+        const stats = fs.statSync(fullPath);
+        return { file, fullPath, mtime: stats.mtime.getTime() };
+      })
+      .sort((a, b) => b.mtime - a.mtime); // новые сверху
+
+    if (files.length > maxCount) {
+      const extraFiles = files.slice(maxCount);
+      for (const item of extraFiles) {
+        fs.unlinkSync(item.fullPath);
+        console.log(`Rotated (deleted) old auto-backup file: ${item.file}`);
+      }
+    }
+  } catch (error) {
+    console.error('Помилка ротації резервних копій:', error);
+  }
+};
+
+export const createCompressedBackup = async (label?: string) => {
   const dbPath = getDbPath();
   if (!fs.existsSync(dbPath)) {
     throw new Error('Файл бази даних не знайдено');
@@ -67,6 +94,10 @@ const createCompressedBackup = (label?: string) => {
   const dbBuffer = fs.readFileSync(dbPath);
   const compressed = zlib.gzipSync(dbBuffer, { level: zlib.constants.Z_BEST_COMPRESSION });
   fs.writeFileSync(backupPath, compressed);
+
+  if (label === 'auto') {
+    await rotateAutoBackups();
+  }
 
   return {
     fileName,
@@ -144,11 +175,39 @@ export const getSettings = async (req: Request, res: Response) => {
       isExpired = daysRemaining <= 0;
     }
 
+    let lastBackupDate: Date | null = null;
+    try {
+      const backupsDir = ensureBackupsDir();
+      const files = fs.readdirSync(backupsDir)
+        .filter((file) => file.startsWith(BACKUP_PREFIX) && file.endsWith('.sqlite.gz'));
+      if (files.length > 0) {
+        const stats = files.map(file => fs.statSync(path.resolve(backupsDir, file)));
+        const latestStats = stats.reduce((latest, current) => current.mtime > latest.mtime ? current : latest, stats[0]);
+        lastBackupDate = latestStats.mtime;
+      }
+    } catch (e) {
+      console.error('Error finding last backup date:', e);
+    }
+
+    // Зчитуємо версію з package.json сервера
+    let appVersion = '1.0.0';
+    try {
+      const pkgPath = path.resolve(__dirname, '../../package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        appVersion = pkg.version;
+      }
+    } catch (e) {
+      console.error('Error reading package.json version:', e);
+    }
+
     res.json({
       ...config,
+      appVersion,
       daysRemaining: isActivated && config.licenseType !== 'lifetime' ? activatedDaysRemaining : daysRemaining,
       isActivated,
-      isExpired
+      isExpired,
+      lastBackupDate: lastBackupDate ? lastBackupDate.toISOString() : null
     });
   } catch (error) {
     console.error('Помилка отримання налаштувань:', error);
@@ -212,7 +271,7 @@ export const getBackupList = async (req: Request, res: Response) => {
 
 export const createBackup = async (req: Request, res: Response) => {
   try {
-    const backup = createCompressedBackup('manual');
+    const backup = await createCompressedBackup('manual');
 
     await logAuditEvent({
       actionType: 'create',
@@ -280,7 +339,7 @@ export const restoreBackupArchive = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Файл резервної копії не знайдено' });
     }
 
-    const safetyBackup = createCompressedBackup('before_restore');
+    const safetyBackup = await createCompressedBackup('before_restore');
     const compressed = fs.readFileSync(backupPath);
     const restoredBuffer = zlib.gunzipSync(compressed);
     const dbPath = restoreDbFromBuffer(restoredBuffer);
@@ -316,7 +375,7 @@ export const restoreBackup = async (req: Request, res: Response) => {
     const originalName = req.file.originalname || 'uploaded_backup.db';
     const isCompressed = originalName.endsWith('.gz');
     const restoredBuffer = isCompressed ? zlib.gunzipSync(uploadedBuffer) : uploadedBuffer;
-    const safetyBackup = createCompressedBackup('before_upload_restore');
+    const safetyBackup = await createCompressedBackup('before_upload_restore');
     const dbPath = restoreDbFromBuffer(restoredBuffer);
     fs.unlinkSync(req.file.path);
 

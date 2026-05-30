@@ -1,13 +1,13 @@
 {
   "name": "server",
-  "version": "1.0.54",
+  "version": "1.0.61",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "generate": "drizzle-kit generate:sqlite",
     "push": "drizzle-kit push",
-    "dev": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "seed": "tsx src/db/seed.ts",
     "seed:menu-test": "tsx src/db/seed_menu_test_data.ts full",
