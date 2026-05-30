@@ -566,12 +566,29 @@ export const psychologicalConsultations = sqliteTable('psychological_consultatio
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
+export const childInclusiveCards = sqliteTable('child_inclusive_cards', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  childId: integer('child_id').notNull().unique().references(() => children.id, { onDelete: 'cascade' }),
+  supportLevel: integer('support_level').notNull().default(1), // Рівень підтримки 1-5
+  specialNeeds: text('special_needs'), // Особливі освітні потреби (ООП / діагноз)
+  teamMembers: text('team_members'), // Склад команди супроводу
+  weeklyHours: real('weekly_hours').default(0), // Годин занять на тиждень
+  adaptationNeeds: text('adaptation_needs'), // Адаптація
+  notes: text('notes'), // Нотатки / моніторинг
+  individualProgram: text('individual_program'), // Програма ІПР
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
+
 export const childrenRelations = relations(children, ({ many, one }) => ({
   illnesses: many(illnesses),
   vaccinations: many(vaccinations),
   psychologicalCard: one(childPsychologicalCards, {
     fields: [children.id],
     references: [childPsychologicalCards.childId]
+  }),
+  inclusiveCard: one(childInclusiveCards, {
+    fields: [children.id],
+    references: [childInclusiveCards.childId]
   }),
   consultations: many(psychologicalConsultations),
   medicationMovements: many(medicationMovements),
@@ -601,6 +618,13 @@ export const illnessesRelations = relations(illnesses, ({ one }) => ({
 export const vaccinationsRelations = relations(vaccinations, ({ one }) => ({
   child: one(children, {
     fields: [vaccinations.childId],
+    references: [children.id],
+  }),
+}));
+
+export const childInclusiveCardsRelations = relations(childInclusiveCards, ({ one }) => ({
+  child: one(children, {
+    fields: [childInclusiveCards.childId],
     references: [children.id],
   }),
 }));

@@ -3,6 +3,7 @@ import { db } from '../db';
 import {
   childPsychologicalCards,
   psychologicalConsultations,
+  childInclusiveCards,
   children,
 } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -155,6 +156,89 @@ router.delete('/consultations/:id', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Помилка видалення консультації:', error);
+    res.status(500).json({ error: 'Внутрішня помилка сервера' });
+  }
+});
+
+// Отримання списку дітей з інклюзивними картками
+router.get('/inclusive', async (req, res) => {
+  try {
+    const allChildren = await db.select({
+      id: children.id,
+      fullName: children.fullName,
+      birthDate: children.birthDate,
+      groupId: children.groupId,
+      status: children.status,
+    }).from(children);
+
+    const cards = await db.select().from(childInclusiveCards);
+    const result = allChildren.map(child => ({
+      ...child,
+      inclusiveCard: cards.find(c => c.childId === child.id) || null
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error('Помилка завантаження інклюзивних карток:', error);
+    res.status(500).json({ error: 'Внутрішня помилка сервера' });
+  }
+});
+
+// Отримання конкретної інклюзивної картки
+router.get('/inclusive/:childId', async (req, res) => {
+  try {
+    const childId = parseInt(req.params.childId);
+    const card = await db.select().from(childInclusiveCards).where(eq(childInclusiveCards.childId, childId));
+    res.json(card[0] || null);
+  } catch (error) {
+    console.error('Помилка завантаження інклюзивної картки:', error);
+    res.status(500).json({ error: 'Внутрішня помилка сервера' });
+  }
+});
+
+// Створення або оновлення інклюзивної картки
+router.post('/inclusive', async (req, res) => {
+  try {
+    const {
+      childId,
+      supportLevel,
+      specialNeeds,
+      teamMembers,
+      weeklyHours,
+      adaptationNeeds,
+      notes,
+      individualProgram
+    } = req.body;
+
+    const existing = await db.select().from(childInclusiveCards).where(eq(childInclusiveCards.childId, childId));
+    
+    let result;
+    if (existing.length > 0) {
+      result = await db.update(childInclusiveCards).set({
+        supportLevel: Number(supportLevel || 1),
+        specialNeeds,
+        teamMembers,
+        weeklyHours: Number(weeklyHours || 0),
+        adaptationNeeds,
+        notes,
+        individualProgram,
+      }).where(eq(childInclusiveCards.childId, childId)).returning();
+    } else {
+      result = await db.insert(childInclusiveCards).values({
+        childId,
+        supportLevel: Number(supportLevel || 1),
+        specialNeeds,
+        teamMembers,
+        weeklyHours: Number(weeklyHours || 0),
+        adaptationNeeds,
+        notes,
+        individualProgram,
+      }).returning();
+    }
+
+    res.json(result[0]);
+  } catch (error) {
+    console.error('Помилка збереження інклюзивної картки:', error);
     res.status(500).json({ error: 'Внутрішня помилка сервера' });
   }
 });
