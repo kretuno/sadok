@@ -54,6 +54,7 @@ interface Group {
 
 const PsychologistPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profiles' | 'consultations' | 'inclusive'>('profiles');
+  const [viewMode, setViewMode] = useState<'groups' | 'list'>('groups');
   const [children, setChildren] = useState<ChildCard[]>([]);
   const [inclusiveChildren, setInclusiveChildren] = useState<ChildCard[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
@@ -125,6 +126,13 @@ const PsychologistPage: React.FC = () => {
       setInclusiveChildren(inclusiveRes.data);
       setConsultations(consRes.data);
       setGroups(groupsRes.data);
+      
+      // Якщо дітей мало, автоматично перемикаємо у режим списку для кращої видимості
+      if (cardsRes.data.length <= 5) {
+        setViewMode('list');
+      } else {
+        setViewMode('groups');
+      }
     } catch (error) {
       console.error('Помилка завантаження даних психолога', error);
     }
@@ -341,7 +349,7 @@ const PsychologistPage: React.FC = () => {
 
       {activeTab === 'profiles' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex justify-between items-center print:hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
@@ -352,11 +360,29 @@ const PsychologistPage: React.FC = () => {
                 className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-warm-500/20 focus:border-warm-500 transition text-sm"
               />
             </div>
+
+            {/* Перемикач режимів перегляду */}
+            <div className="flex bg-gray-100 p-1 rounded-xl w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => { setViewMode('groups'); setSelectedGroupId(null); }}
+                className={`flex-1 sm:flex-none text-center px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'groups' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                За групами
+              </button>
+              <button
+                type="button"
+                onClick={() => { setViewMode('list'); setSelectedGroupId(null); }}
+                className={`flex-1 sm:flex-none text-center px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Список дітей
+              </button>
+            </div>
           </div>
 
-          {/* Відображення груп, якщо пошук порожній та група не вибрана */}
-          {searchTerm.trim().length === 0 && selectedGroupId === null && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {/* Відображення груп, якщо пошук порожній та група не вибрана і обрано режим груп */}
+          {viewMode === 'groups' && searchTerm.trim().length === 0 && selectedGroupId === null && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-in fade-in duration-200">
               {groups.map((group) => {
                 const groupChildrenCount = children.filter(c => c.groupId === group.id).length;
                 const completedCardsCount = children.filter(c => c.groupId === group.id && c.card).length;
@@ -391,11 +417,11 @@ const PsychologistPage: React.FC = () => {
             </div>
           )}
 
-          {/* Відображення таблиці дітей (якщо вибрано групу або ведеться пошук) */}
-          {(selectedGroupId !== null || searchTerm.trim().length > 0) && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Відображення таблиці дітей (якщо вибрано режим списку, або вибрано групу, або ведеться пошук) */}
+          {(viewMode === 'list' || selectedGroupId !== null || searchTerm.trim().length > 0) && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-200">
               <div className="p-4 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50 print:hidden">
-                {searchTerm.trim().length === 0 && (
+                {searchTerm.trim().length === 0 && viewMode === 'groups' && selectedGroupId !== null && (
                   <button 
                     onClick={() => setSelectedGroupId(null)}
                     className="flex items-center justify-center h-8 w-8 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
@@ -406,7 +432,9 @@ const PsychologistPage: React.FC = () => {
                 <h3 className="font-bold text-gray-800">
                   {searchTerm.trim().length > 0 
                     ? `Результати пошуку: ${searchTerm}` 
-                    : groups.find(g => g.id === selectedGroupId)?.name}
+                    : selectedGroupId 
+                      ? `Група: ${groups.find(g => g.id === selectedGroupId)?.name}` 
+                      : 'Всі діти закладу'}
                 </h3>
                 <span className="text-sm font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
                   {displayChildren.length}
@@ -630,8 +658,28 @@ const PsychologistPage: React.FC = () => {
                     if (filtered.length === 0) {
                       return (
                         <tr>
-                          <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
-                            Дітей за вказаними фільтрами не знайдено
+                          <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
+                            <div className="flex flex-col items-center justify-center gap-3">
+                              <HeartHandshake className="text-gray-300" size={48} />
+                              <p className="font-semibold text-gray-500">
+                                {showOnlyInclusiveOnRegister 
+                                  ? 'Дітей на обліку ООП за вказаними фільтрами не знайдено'
+                                  : 'Дітей за вказаними фільтрами не знайдено'}
+                              </p>
+                              {showOnlyInclusiveOnRegister && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowOnlyInclusiveOnRegister(false);
+                                    setSelectedSupportLevelFilter('all');
+                                    setSelectedGroupId(null);
+                                  }}
+                                  className="mt-2 text-xs font-bold text-warm-600 hover:text-warm-700 bg-warm-50 border border-warm-100 px-4 py-2 rounded-xl hover:bg-warm-100 transition shadow-sm"
+                                >
+                                  Показати всіх дітей закладу для створення картки ООП / ІПР
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
