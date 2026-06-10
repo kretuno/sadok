@@ -408,8 +408,7 @@ app.on('ready', () => {
   startDiscoveryResponder();
   createWindow();
 
-  // Запуск фонової перевірки оновлень вимкнено для уникнення 404 помилок на приватному/нествореному репозиторії
-  /*
+  // Автоматична перевірка оновлень при старті програми (лише у production-режимі)
   if (!isDev) {
     setTimeout(() => {
       autoUpdater.checkForUpdates().catch((err) => {
@@ -417,7 +416,6 @@ app.on('ready', () => {
       });
     }, 5000);
   }
-  */
 });
 
 

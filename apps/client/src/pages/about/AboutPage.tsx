@@ -1,5 +1,5 @@
-import React from 'react';
-import { Code, Mail, Phone, User, ExternalLink, ShieldCheck, Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Code, Mail, Phone, User, ExternalLink, ShieldCheck, Heart, RefreshCw, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import ukraineCoatOfArms from '../../assets/ukraine-coat-of-arms.svg';
 import { useSettings } from '../../contexts/SettingsContext';
 
@@ -7,6 +7,55 @@ const AboutPage: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const { settings } = useSettings();
   const appVersion = settings?.appVersion || __APP_VERSION__;
+
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    const desktop = window.sadokDesktop;
+    if (!desktop) return;
+
+    const unsubscribeAvailable = desktop.onUpdateAvailable?.(() => {
+      setUpdateStatus('available');
+    });
+
+    const unsubscribeNotAvailable = desktop.onUpdateNotAvailable?.(() => {
+      setUpdateStatus('not-available');
+    });
+
+    const unsubscribeError = desktop.onUpdateError?.((err) => {
+      setUpdateStatus('error');
+      setErrorMessage(err || 'Невідома помилка під час перевірки оновлень');
+    });
+
+    return () => {
+      unsubscribeAvailable?.();
+      unsubscribeNotAvailable?.();
+      unsubscribeError?.();
+    };
+  }, []);
+
+  const handleCheckForUpdates = async () => {
+    if (!window.sadokDesktop?.checkForUpdates) {
+      setUpdateStatus('error');
+      setErrorMessage('Ця функція доступна лише у встановленій версії програми.');
+      return;
+    }
+
+    setUpdateStatus('checking');
+    setErrorMessage('');
+    
+    try {
+      const result = await window.sadokDesktop.checkForUpdates();
+      if (!result.success) {
+        setUpdateStatus('error');
+        setErrorMessage(result.error || 'Не вдалося підключитися до сервера оновлень.');
+      }
+    } catch (err: any) {
+      setUpdateStatus('error');
+      setErrorMessage(err.message || 'Сталася помилка при перевірці оновлень.');
+    }
+  };
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-white p-4 md:p-8">
@@ -112,6 +161,72 @@ const AboutPage: React.FC = () => {
                 Документація (Wiki) <span>→</span>
               </button>
             </div>
+          </div>
+
+          {/* Update Checker Card */}
+          <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white/60 p-8 shadow-xl backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-2xl md:col-span-2">
+            <div className="absolute right-0 top-0 h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500" />
+            <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-800">
+              <RefreshCw size={24} className={`text-emerald-600 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
+              Оновлення програми
+            </h3>
+            
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 font-medium">
+                  Поточна версія: <span className="font-bold text-gray-800">v{appVersion}</span>
+                </p>
+                <p className="mt-1 text-xs text-gray-400 font-normal">
+                  Програма автоматично перевіряє наявність оновлень при кожному запуску. Ви також можете запустити перевірку вручну.
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={handleCheckForUpdates}
+                  disabled={updateStatus === 'checking'}
+                  className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold shadow-sm transition-all active:scale-95 duration-200 ${
+                    updateStatus === 'checking'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-white hover:shadow-md'
+                  }`}
+                >
+                  {updateStatus === 'checking' ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin" />
+                      Перевірка...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw size={16} />
+                      Перевірити оновлення
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Status Messages */}
+            {updateStatus === 'not-available' && (
+              <div className="mt-4 flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50/50 px-4 py-3 text-sm text-emerald-800 animate-in fade-in slide-in-from-top-2">
+                <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
+                <span>У вас встановлено найновішу версію програми. Оновлення не потрібні.</span>
+              </div>
+            )}
+
+            {updateStatus === 'available' && (
+              <div className="mt-4 flex items-center gap-2 rounded-2xl border border-teal-100 bg-teal-50/50 px-4 py-3 text-sm text-teal-800 animate-in fade-in slide-in-from-top-2">
+                <Sparkles size={18} className="text-teal-600 animate-pulse flex-shrink-0" />
+                <span>Знайдено нове оновлення! Його завантаження скоро розпочнеться у вікні сповіщень.</span>
+              </div>
+            )}
+
+            {updateStatus === 'error' && (
+              <div className="mt-4 flex items-center gap-2 rounded-2xl border border-rose-100 bg-rose-50/50 px-4 py-3 text-sm text-rose-800 animate-in fade-in slide-in-from-top-2">
+                <AlertCircle size={18} className="text-rose-600 flex-shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
           </div>
         </div>
 
