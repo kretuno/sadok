@@ -154,9 +154,14 @@ const AboutPage: React.FC = () => {
               <button className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/20">
                 Технічна підтримка <span>→</span>
               </button>
-              <button className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/20">
+              <a
+                href="http://osipov.pp.ua"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/20"
+              >
                 Сайт студії <span>→</span>
-              </button>
+              </a>
               <button className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/20">
                 Документація (Wiki) <span>→</span>
               </button>
