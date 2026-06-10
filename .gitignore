@@ -33,3 +33,4 @@ apps/server/sqlite.db
 # Local runtime artifacts
 uploads/
 test-server-data/
+test_spawn_prod.js
