@@ -77,7 +77,9 @@ export const saveDesktopConfig = async (config: DesktopConfig): Promise<DesktopC
   const nextConfig = { ...config, serverUrl };
 
   if (window.sadokDesktop?.setConfig) {
-    return window.sadokDesktop.setConfig(nextConfig);
+    const savedConfig = await window.sadokDesktop.setConfig(nextConfig);
+    setStoredServerUrl(savedConfig.serverUrl || DEFAULT_SERVER_URL);
+    return savedConfig;
   }
 
   return nextConfig;

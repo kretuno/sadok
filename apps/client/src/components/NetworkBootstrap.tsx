@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { loadDesktopConfig, type DesktopConfig } from '../api/serverConfig';
+import { loadDesktopConfig, saveDesktopConfig, type DesktopConfig } from '../api/serverConfig';
 import api from '../api/axios';
 import ServerDiscoveryScreen from '../pages/setup/ServerDiscoveryScreen';
 
@@ -13,28 +13,49 @@ const NetworkBootstrap: React.FC<NetworkBootstrapProps> = ({ children }) => {
   const [isServerOffline, setIsServerOffline] = useState(false);
 
   useEffect(() => {
+    const waitForHealth = async (attempts: number, timeout: number) => {
+      let lastError: unknown;
+
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        try {
+          await api.get('/health', { timeout });
+          return true;
+        } catch (error) {
+          lastError = error;
+          await new Promise((resolve) => window.setTimeout(resolve, 700));
+        }
+      }
+
+      console.warn('Сервер недоступний:', lastError);
+      return false;
+    };
+
     const checkNetwork = async () => {
       try {
         const desktopConfig = await loadDesktopConfig();
-        setConfig(desktopConfig);
+        let activeConfig = desktopConfig;
+        setConfig(activeConfig);
 
         // Якщо це серверний комп'ютер, або ми працюємо в браузері,
         // просто пропускаємо цей крок
-        if (desktopConfig.role === 'server' && !window.sadokDesktop) {
+        if (activeConfig.role === 'server' && !window.sadokDesktop) {
           setIsChecking(false);
           return;
         }
 
-        // Перевіряємо, чи доступний сервер
-        try {
-          // api/axios використовує getApiBaseUrl, який бере serverUrl зі сховища (записане в loadDesktopConfig)
-          await api.get('/health', { timeout: 3000 });
-          setIsServerOffline(false);
-        } catch (error) {
-          console.warn('Сервер недоступний:', error);
-          if (desktopConfig.role === 'client') {
-            setIsServerOffline(true);
+        // api/axios використовує getApiBaseUrl, який бере serverUrl зі сховища (записане в loadDesktopConfig)
+        const isHealthy = await waitForHealth(activeConfig.role === 'server' ? 12 : 4, 1200);
+        if (isHealthy) {
+          if (activeConfig.role === 'client' && activeConfig.serverUrl === 'http://127.0.0.1:3000') {
+            activeConfig = await saveDesktopConfig({
+              role: 'server',
+              serverUrl: 'http://127.0.0.1:3000',
+            });
+            setConfig(activeConfig);
           }
+          setIsServerOffline(false);
+        } else if (activeConfig.role === 'client') {
+          setIsServerOffline(true);
         }
       } catch (err) {
         console.error('Не вдалося завантажити конфігурацію:', err);

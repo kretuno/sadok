@@ -1,0 +1,42 @@
+КОМАНДЫ ДЛЯ РАБОТЫ НА WINDOWS И MAC
+===================================
+
+Начало работы на любой машине:
+
+```bash
+git pull
+git checkout codex/cross-platform-setup
+npm run dev
+```
+
+Если это новая машина или сломались зависимости:
+
+```bash
+npm run install:all
+```
+
+Сохранить и отправить изменения:
+
+```bash
+git add .
+git commit -m "ваш комментарий"
+git push -u origin codex/cross-platform-setup
+```
+
+На второй машине перед продолжением работы:
+
+```bash
+git pull
+git checkout codex/cross-platform-setup
+npm run install:all
+npm run dev
+```
+
+Примеры сообщений для коммитов:
+
+```bash
+git commit -m "fix: исправил запуск на macOS"
+git commit -m "feat: добавил настройку поиска сервера"
+git commit -m "chore: обновил gitignore и кроссплатформенные заметки"
+git commit -m "refactor: упростил загрузку конфигурации"
+```

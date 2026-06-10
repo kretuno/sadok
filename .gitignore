@@ -17,12 +17,19 @@ Install/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+app-log.txt
+app-log-new.txt
 
 # OS and editor noise
 .DS_Store
 Thumbs.db
+._*
 
 # Key generator tool and local databases
 tools/
 apps/server/sqlite.db
 *.db
+
+# Local runtime artifacts
+uploads/
+test-server-data/

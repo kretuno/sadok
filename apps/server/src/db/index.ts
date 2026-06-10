@@ -49,4 +49,19 @@ if (!hasUsersTable(dbPath)) {
 }
 
 const sqlite = new Database(dbPath);
+
+// Автоматичне виправлення поламаного хешу пароля адміністратора
+try {
+  const brokenHash = '$2b$10$3Ei2EkgO1GwUHgGJf7ugMe/it7Se4Id1LlQxRx1zhwhIBd5COPKsW';
+  const row = sqlite.prepare("SELECT id, password_hash FROM users WHERE username = 'admin'").get() as { id: number, password_hash: string } | undefined;
+  if (row && row.password_hash === brokenHash) {
+    const bcrypt = require('bcryptjs');
+    const newHash = bcrypt.hashSync('admin123', 10);
+    sqlite.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(newHash, row.id);
+    console.log('[DB] Поламаний хеш пароля адміністратора автоматично виправлено на admin123!');
+  }
+} catch (err) {
+  console.error('[DB] Не вдалося перевірити/виправити поламаний пароль адміністратора:', err);
+}
+
 export const db = drizzle(sqlite, { schema });

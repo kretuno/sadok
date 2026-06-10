@@ -1,0 +1,33 @@
+GIT COMMANDS FOR WINDOWS AND MAC
+================================
+
+Start work on any machine:
+
+```bash
+git pull
+git checkout codex/cross-platform-setup
+npm run dev
+```
+
+If this is a new machine or dependencies are broken:
+
+```bash
+npm run install:all
+```
+
+Save and publish changes:
+
+```bash
+git add .
+git commit -m "your message"
+git push -u origin codex/cross-platform-setup
+```
+
+On the second machine before continuing:
+
+```bash
+git pull
+git checkout codex/cross-platform-setup
+npm run install:all
+npm run dev
+```

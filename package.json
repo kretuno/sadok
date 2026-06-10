@@ -16,6 +16,7 @@
     "build:server": "cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js",
     "build": "npm run build:client && npm run build:server",
     "dist:win": "npm run build && electron-builder --win nsis",
+    "dist:win:ia32": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=ia32 && electron-builder --win nsis --ia32",
     "install:all": "npm install && cd apps/client && npm install && cd ../server && npm install",
     "clean:portable": "node scripts/clean-portable.js",
     "version:patch": "node scripts/bump-version.js patch",
@@ -29,7 +30,7 @@
   "type": "commonjs",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/edosi/sadok-app.git"
+    "url": "git+https://github.com/kretuno/sadok.git"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
@@ -44,8 +45,8 @@
     "npmRebuild": false,
     "publish": {
       "provider": "github",
-      "owner": "edosi",
-      "repo": "sadok-app"
+      "owner": "kretuno",
+      "repo": "sadok"
     },
     "directories": {
       "output": "Install",
@@ -83,6 +84,7 @@
       "**/*.node"
     ],
     "win": {
+      "artifactName": "${productName} Setup ${version}-${arch}.${ext}",
       "target": [
         "nsis"
       ]

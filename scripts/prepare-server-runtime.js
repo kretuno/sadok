@@ -7,6 +7,15 @@ const rootDir = path.resolve(__dirname, '..');
 const serverDir = path.join(rootDir, 'apps', 'server');
 const runtimeDir = path.join(rootDir, 'server-runtime');
 const electronVersion = require(path.join(rootDir, 'package.json')).devDependencies.electron.replace(/^[^\d]*/, '');
+const targetArchArg = process.argv.find((arg) => arg.startsWith('--arch='));
+const targetArch = targetArchArg
+  ? targetArchArg.slice('--arch='.length)
+  : process.env.npm_config_arch || process.arch;
+
+if (!['x64', 'ia32', 'arm64'].includes(targetArch)) {
+  console.error(`[prepare-server-runtime] Unsupported architecture: ${targetArch}`);
+  process.exit(1);
+}
 
 fs.rmSync(runtimeDir, { recursive: true, force: true });
 fs.mkdirSync(runtimeDir, { recursive: true });
@@ -18,9 +27,12 @@ fs.copyFileSync(path.join(serverDir, 'package-lock.json'), path.join(runtimeDir,
 const npmCommand = process.platform === 'win32'
   ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'cmd.exe')
   : 'npm';
+const npmInstallFlags = targetArch === process.arch
+  ? 'install --omit=dev'
+  : 'install --omit=dev --ignore-scripts';
 const npmArgs = process.platform === 'win32'
-  ? ['/d', '/s', '/c', 'npm.cmd install --omit=dev']
-  : ['install', '--omit=dev'];
+  ? ['/d', '/s', '/c', `npm.cmd ${npmInstallFlags}`]
+  : npmInstallFlags.split(' ');
 
 async function rebuildNativeModules() {
   const originalRealpath = fs.promises.realpath.bind(fs.promises);
@@ -45,7 +57,7 @@ async function rebuildNativeModules() {
   const rebuildTask = rebuild({
     buildPath: runtimeDir,
     electronVersion,
-    arch: process.arch,
+    arch: targetArch,
     extraModules: ['better-sqlite3'],
     force: true,
     types: ['prod', 'optional'],
@@ -65,9 +77,15 @@ async function rebuildNativeModules() {
 }
 
 async function main() {
+  console.error(`[prepare-server-runtime] Preparing server runtime for ${targetArch}`);
   execFileSync(npmCommand, npmArgs, {
     cwd: runtimeDir,
     stdio: 'inherit',
+    env: {
+      ...process.env,
+      npm_config_arch: targetArch,
+      npm_config_target_arch: targetArch,
+    },
   });
 
   console.error('Searching dependency tree');

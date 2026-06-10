@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Server, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { saveDesktopConfig } from '../../api/serverConfig';
 
 interface DiscoveredServer {
   name: string;
@@ -45,10 +46,10 @@ const ServerDiscoveryScreen: React.FC<ServerDiscoveryScreenProps> = ({ onConnect
   }, []);
 
   const handleConnect = async () => {
-    if (!selectedServer || !window.sadokDesktop?.setConfig) return;
+    if (!selectedServer) return;
 
     try {
-      await window.sadokDesktop.setConfig({
+      await saveDesktopConfig({
         role: 'client',
         serverUrl: selectedServer.url,
       });
@@ -58,6 +59,21 @@ const ServerDiscoveryScreen: React.FC<ServerDiscoveryScreenProps> = ({ onConnect
       }, 500);
     } catch (err) {
       console.error('Failed to save config:', err);
+      setError('Не вдалося зберегти налаштування.');
+    }
+  };
+
+  const handleSetAsServer = async () => {
+    try {
+      await saveDesktopConfig({
+        role: 'server',
+        serverUrl: 'http://127.0.0.1:3000',
+      });
+      setTimeout(() => {
+        onConnected();
+      }, 500);
+    } catch (err) {
+      console.error('Failed to set config as server:', err);
       setError('Не вдалося зберегти налаштування.');
     }
   };
@@ -132,6 +148,13 @@ const ServerDiscoveryScreen: React.FC<ServerDiscoveryScreenProps> = ({ onConnect
             className="w-full rounded-xl bg-gray-100 px-4 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
           >
             Сканувати знову
+          </button>
+          <button
+            onClick={handleSetAsServer}
+            disabled={isScanning}
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            Зробити цей комп'ютер Головним (Сервером)
           </button>
         </div>
       </div>

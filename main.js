@@ -194,7 +194,33 @@ function getServerEntryPath() {
 
 function registerIpcHandlers() {
   ipcMain.handle('sadok:get-config', () => readDesktopConfig());
-  ipcMain.handle('sadok:set-config', (_event, config) => writeDesktopConfig(config || {}));
+  ipcMain.handle('sadok:set-config', (_event, config) => {
+    const nextConfig = writeDesktopConfig(config || {});
+    
+    if (nextConfig.role === 'server') {
+      if (!serverProcess) {
+        console.log('[Electron] Role changed to server. Starting local server...');
+        startServer();
+      }
+      if (!discoverySocket) {
+        console.log('[Electron] Role changed to server. Starting discovery responder...');
+        startDiscoveryResponder();
+      }
+    } else if (nextConfig.role === 'client') {
+      if (serverProcess) {
+        console.log('[Electron] Role changed to client. Stopping local server...');
+        serverProcess.kill();
+        serverProcess = null;
+      }
+      if (discoverySocket) {
+        console.log('[Electron] Role changed to client. Stopping discovery responder...');
+        discoverySocket.close();
+        discoverySocket = null;
+      }
+    }
+    
+    return nextConfig;
+  });
   ipcMain.handle('sadok:discover-servers', () => discoverServers());
 
   // Автооновлення IPC
@@ -238,12 +264,16 @@ function startServer() {
   
   console.log('[Electron] Starting production server...');
   const serverPath = getServerEntryPath();
+  const serverCwd = process.resourcesPath || __dirname;
+  const jwtSecret = process.env.JWT_SECRET || 'sadok-default-local-jwt-secret-key-2026';
   
   serverProcess = spawn(process.execPath, ['--max-old-space-size=128', serverPath], {
+    cwd: serverCwd,
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
       PORT: '3000',
+      JWT_SECRET: jwtSecret,
       SADOK_DATA_DIR: path.join(app.getPath('userData'), 'server-data'),
     },
     windowsHide: true,
@@ -378,7 +408,8 @@ app.on('ready', () => {
   startDiscoveryResponder();
   createWindow();
 
-  // Запуск фонової перевірки оновлень через 5 секунд після запуску (лише в продакшн)
+  // Запуск фонової перевірки оновлень вимкнено для уникнення 404 помилок на приватному/нествореному репозиторії
+  /*
   if (!isDev) {
     setTimeout(() => {
       autoUpdater.checkForUpdates().catch((err) => {
@@ -386,6 +417,7 @@ app.on('ready', () => {
       });
     }, 5000);
   }
+  */
 });
 
 
