@@ -19,6 +19,7 @@ import {
   Trash2,
   Utensils,
   FileText,
+  Copy,
 } from 'lucide-react';
 import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
 import { uk } from 'date-fns/locale';
@@ -311,6 +312,13 @@ const MenuPage: React.FC = () => {
   const [isManualRestockModalOpen, setIsManualRestockModalOpen] = useState(false);
   const [printPreview, setPrintPreview] = useState<{ type: 'parents' | 'kitchen' | 'requirement'; data: any } | null>(null);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
+
+  // Копіювання меню з іншої дати
+  const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+  const [copySourceDate, setCopySourceDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const [copyLoading, setCopyLoading] = useState(false);
+
   const [restockForm, setRestockForm] = useState({
     invoiceNumber: '',
     date: new Date().toISOString().slice(0, 10),
@@ -881,6 +889,71 @@ const MenuPage: React.FC = () => {
       );
     } catch (loadError) {
       console.error(loadError);
+    }
+  };
+
+  const handleCopyMenuFromDate = async (sourceDateStr: string) => {
+    setCopyError(null);
+    setCopyLoading(true);
+
+    try {
+      const res = await api.get(`/menus?start=${sourceDateStr}&end=${sourceDateStr}`);
+
+      if (res.data.length === 0) {
+        setCopyError('На обрану дату немає створеного меню.');
+        setCopyLoading(false);
+        return;
+      }
+
+      const full = await api.get(`/menus/${res.data[0].id}`);
+      const menu: MenuAnalysis = full.data;
+      const menuItems = Array.isArray(menu.items) ? menu.items : [];
+
+      setMenuForm((prev) => {
+        const keepCurrentCounts =
+          Number(prev.childrenCount0_4) > 0 ||
+          Number(prev.childrenCount5_7) > 0 ||
+          Number(prev.employeesCount) > 0;
+        return {
+          ...prev,
+          childrenCount0_4: keepCurrentCounts ? prev.childrenCount0_4 : String(menu.childrenCount0_4),
+          childrenCount5_7: keepCurrentCounts ? prev.childrenCount5_7 : String(menu.childrenCount5_7),
+          employeesCount: keepCurrentCounts ? prev.employeesCount : String(menu.employeesCount ?? '0'),
+          targetPrice0_4: String(menu.targetPrice0_4 || '50'),
+          targetPrice5_7: String(menu.targetPrice5_7 || '65'),
+          isConfirmed: false,
+        };
+      });
+
+      setMenuItemRows(
+        menuItems.map((item) => ({
+          recipeId: String(item.recipeId),
+          mealType: item.mealType,
+          outputWeight0_4: String(item.outputWeight0_4 || ''),
+          outputWeight5_7: String(item.outputWeight5_7 || ''),
+          outputWeightEmployees: String(item.outputWeightEmployees || ''),
+          adjustmentsExpanded: false,
+          adjustments: (item.ingredientAdjustments || []).map((adjustment) => ({
+            recipeIngredientId: adjustment.recipeIngredientId,
+            sourceType: adjustment.sourceType,
+            sourceName: adjustment.sourceName,
+            ageGroup: adjustment.ageGroup,
+            unit: adjustment.unit,
+            defaultWeight: adjustment.effectiveGrossWeight,
+            weight: String(adjustment.effectiveGrossWeight),
+            isAdjusted: adjustment.isAdjusted,
+          })),
+        }))
+      );
+
+      setHasUnsavedMenuChanges(true);
+      setIsCopyModalOpen(false);
+      setSuccess('Меню успішно скопійовано. Не забудьте натиснути «Зберегти»!');
+    } catch (err: any) {
+      console.error(err);
+      setCopyError(err.response?.data?.message || 'Не вдалося скопіювати меню.');
+    } finally {
+      setCopyLoading(false);
     }
   };
 
@@ -1478,6 +1551,71 @@ const MenuPage: React.FC = () => {
       </Modal>
 
       <Modal
+        isOpen={isCopyModalOpen}
+        onClose={() => setIsCopyModalOpen(false)}
+        title="Копіювання меню з іншої дати"
+        maxWidth="md"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleCopyMenuFromDate(copySourceDate);
+          }}
+          className="space-y-4"
+        >
+          <p className="text-sm text-gray-500">
+            Виберіть дату, з якої ви хочете повністю скопіювати меню (страви, виходи порцій та ручні коригування інгредієнтів) в поточний обраний день.
+          </p>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Дата-джерело</label>
+            <input
+              type="date"
+              value={copySourceDate}
+              onChange={(e) => setCopySourceDate(e.target.value)}
+              className="ui-input"
+              required
+            />
+          </div>
+
+          {copyError && (
+            <div className="flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 animate-in fade-in">
+              <AlertCircle size={18} className="flex-shrink-0" />
+              <span>{copyError}</span>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsCopyModalOpen(false)}
+              className="ui-button-secondary px-5"
+              disabled={copyLoading}
+            >
+              Скасувати
+            </button>
+            <button
+              type="submit"
+              className="ui-button-primary bg-warm-600 hover:bg-warm-700 px-5 flex items-center gap-2"
+              disabled={copyLoading}
+            >
+              {copyLoading ? (
+                <>
+                  <RotateCcw size={16} className="animate-spin" />
+                  Копіювання...
+                </>
+              ) : (
+                <>
+                  <Copy size={16} />
+                  Копіювати
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
         isOpen={isManualRestockModalOpen}
         onClose={() => setIsManualRestockModalOpen(false)}
         title="Ручне поповнення залишків без накладної"
@@ -1663,6 +1801,17 @@ const MenuPage: React.FC = () => {
                   <button onClick={() => handlePrint('requirement')} className="ui-button-secondary border-purple-200 px-4 text-purple-700 hover:bg-purple-50">
                     <FileText size={16} /> Меню-вимога
                   </button>
+                  {!menuForm.isConfirmed && (
+                    <button
+                      onClick={() => {
+                        setCopyError(null);
+                        setIsCopyModalOpen(true);
+                      }}
+                      className="ui-button-secondary border-warm-200 px-4 text-warm-700 hover:bg-warm-50"
+                    >
+                      <Copy size={16} /> Копіювати з іншої дати
+                    </button>
+                  )}
                   <button
                     disabled={saving || menuForm.isConfirmed}
                     onClick={handleSaveMenu}
