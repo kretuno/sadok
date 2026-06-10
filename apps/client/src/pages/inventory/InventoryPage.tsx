@@ -136,6 +136,17 @@ const formatDate = (value?: string | null) => {
   }).format(new Date(value));
 };
 
+const parseLocalizedNumber = (value: string) => {
+  const normalized = value.trim().replace(',', '.');
+
+  if (!normalized) {
+    return 0;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+};
+
 const InventoryPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('products');
   const [products, setProducts] = useState<Product[]>([]);
@@ -145,6 +156,7 @@ const InventoryPage: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [productCard, setProductCard] = useState<ProductCardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [invoiceError, setInvoiceError] = useState<string | null>(null);
   const [, setLoading] = useState(false);
 
   // Modals state
@@ -225,6 +237,31 @@ const InventoryPage: React.FC = () => {
     const query = search.trim().toLowerCase();
     return products.filter((product) => product.name.toLowerCase().includes(query));
   }, [products, search]);
+
+  const invoiceItemsTotal = useMemo(
+    () =>
+      invoiceItems.reduce((sum, item) => {
+        const quantity = parseLocalizedNumber(item.quantity);
+        const unitPrice = parseLocalizedNumber(item.unitPrice);
+
+        if (!Number.isFinite(quantity) || !Number.isFinite(unitPrice)) {
+          return sum;
+        }
+
+        return sum + quantity * unitPrice;
+      }, 0),
+    [invoiceItems]
+  );
+
+  const invoiceVatAmount = useMemo(() => {
+    const parsedVat = parseLocalizedNumber(invoiceForm.vatAmount);
+    return Number.isFinite(parsedVat) ? parsedVat : 0;
+  }, [invoiceForm.vatAmount]);
+
+  const invoiceGrandTotal = useMemo(
+    () => invoiceItemsTotal + invoiceVatAmount,
+    [invoiceItemsTotal, invoiceVatAmount]
+  );
 
   const loadAllData = async () => {
     setLoading(true);
@@ -309,6 +346,7 @@ const InventoryPage: React.FC = () => {
   };
 
   const handleInvoiceItemChange = (index: number, field: keyof InvoiceItemForm, value: string) => {
+    setInvoiceError(null);
     setInvoiceItems((currentItems) =>
       currentItems.map((item, itemIndex) => {
         if (itemIndex !== index) {
@@ -342,20 +380,20 @@ const InventoryPage: React.FC = () => {
 
   const handleInvoiceCreate = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError(null);
+    setInvoiceError(null);
 
     try {
       await api.post('/invoices', {
         ...invoiceForm,
         supplierId: invoiceForm.supplierId ? Number(invoiceForm.supplierId) : undefined,
-        vatAmount: Number(invoiceForm.vatAmount || 0),
+        vatAmount: parseLocalizedNumber(invoiceForm.vatAmount),
         items: invoiceItems.map((item) => ({
           productId: item.productId ? Number(item.productId) : undefined,
           productName: item.productName,
           unit: item.unit,
           category: item.category,
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unitPrice),
+          quantity: parseLocalizedNumber(item.quantity),
+          unitPrice: parseLocalizedNumber(item.unitPrice),
         })),
       });
 
@@ -371,10 +409,11 @@ const InventoryPage: React.FC = () => {
         isDraft: false,
       });
       setInvoiceItems([emptyInvoiceItem()]);
+      setInvoiceError(null);
       setIsInvoiceModalOpen(false);
       await loadAllData();
     } catch (requestError: any) {
-      setError(requestError?.response?.data?.message ?? 'Не вдалося зберегти накладну.');
+      setInvoiceError(requestError?.response?.data?.message ?? 'Не вдалося зберегти накладну.');
     }
   };
 
@@ -1103,11 +1142,21 @@ const InventoryPage: React.FC = () => {
 
       <Modal 
         isOpen={isInvoiceModalOpen} 
-        onClose={() => setIsInvoiceModalOpen(false)} 
+        onClose={() => {
+          setInvoiceError(null);
+          setIsInvoiceModalOpen(false);
+        }} 
         title="Нова прихідна накладна"
         maxWidth="4xl"
       >
         <form onSubmit={handleInvoiceCreate} className="space-y-6">
+          {invoiceError && (
+            <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertCircle size={18} />
+              <span>{invoiceError}</span>
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase ml-1">Номер накладної</label>
@@ -1198,16 +1247,26 @@ const InventoryPage: React.FC = () => {
             </div>
             
             <div className="space-y-3">
-              <div className="grid gap-4 px-1 text-[11px] font-bold uppercase tracking-wider text-gray-400 md:grid-cols-12">
+              <div className="hidden gap-4 px-1 text-[11px] font-bold uppercase tracking-wider text-gray-400 md:grid md:grid-cols-[repeat(15,minmax(0,1fr))]">
                 <div className="md:col-span-4">Продукт</div>
                 <div className="md:col-span-3">Назва, якщо новий</div>
                 <div className="md:col-span-1">Од.</div>
                 <div className="md:col-span-2">Кількість</div>
                 <div className="md:col-span-2">Ціна за од.</div>
+                <div className="md:col-span-2 text-right">Сума</div>
+                <div className="md:col-span-1" />
               </div>
-              {invoiceItems.map((item, index) => (
+              {invoiceItems.map((item, index) => {
+                const lineQuantity = parseLocalizedNumber(item.quantity);
+                const lineUnitPrice = parseLocalizedNumber(item.unitPrice);
+                const lineTotal =
+                  Number.isFinite(lineQuantity) && Number.isFinite(lineUnitPrice)
+                    ? lineQuantity * lineUnitPrice
+                    : 0;
+
+                return (
                 <div key={index} className="group relative p-4 rounded-2xl border border-warm-100 bg-white shadow-sm hover:border-warm-200 transition">
-                  <div className="grid gap-4 md:grid-cols-12">
+                  <div className="grid gap-4 md:grid-cols-[repeat(15,minmax(0,1fr))]">
                     <div className="md:col-span-4">
                       <CustomSelect
                         options={productOptions}
@@ -1237,28 +1296,50 @@ const InventoryPage: React.FC = () => {
                         onChange={(event) => handleInvoiceItemChange(index, 'quantity', event.target.value)}
                         placeholder="К-сть"
                         className="ui-input"
+                        inputMode="decimal"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          value={item.unitPrice}
-                          onChange={(event) => handleInvoiceItemChange(index, 'unitPrice', event.target.value)}
-                          placeholder="Ціна за од."
-                          className="ui-input"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeInvoiceItem(index)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                      <input
+                        value={item.unitPrice}
+                        onChange={(event) => handleInvoiceItemChange(index, 'unitPrice', event.target.value)}
+                        placeholder="Ціна за од."
+                        className="ui-input"
+                        inputMode="decimal"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <div className="flex h-full items-center justify-end rounded-2xl border border-warm-100 bg-warm-50 px-4 text-sm font-bold text-gray-700">
+                        {formatMoney(lineTotal)}
                       </div>
+                    </div>
+                    <div className="md:col-span-1">
+                      <button
+                        type="button"
+                        onClick={() => removeInvoiceItem(index)}
+                        className="flex h-full w-full items-center justify-center rounded-xl text-red-400 transition hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-warm-100 bg-warm-50/70 p-4">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <span>Сума позицій</span>
+              <span className="font-bold text-gray-800">{formatMoney(invoiceItemsTotal)}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm text-gray-600">
+              <span>ПДВ</span>
+              <span className="font-bold text-gray-800">{formatMoney(invoiceVatAmount)}</span>
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-warm-200 pt-3">
+              <span className="text-sm font-semibold text-gray-700">Загальна сума накладної</span>
+              <span className="text-lg font-black text-warm-600">{formatMoney(invoiceGrandTotal)}</span>
             </div>
           </div>
 
