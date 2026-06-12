@@ -3,12 +3,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/axios';
 import { useTranslation } from 'react-i18next';
 import { discoverDesktopServers, loadDesktopConfig, normalizeServerUrl, saveDesktopConfig } from '../../api/serverConfig';
+import { Eye, EyeOff } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [serverUrl, setServerUrl] = useState('http://127.0.0.1:3000');
   const [desktopRole, setDesktopRole] = useState<'server' | 'client'>('server');
   const [isDesktop, setIsDesktop] = useState(false);
@@ -163,14 +165,25 @@ const LoginPage: React.FC = () => {
             <label className="block text-gray-600 text-xs font-semibold mb-1 ml-1" htmlFor="password">
               Пароль
             </label>
-            <input
-              id="password"
-              type="password"
-              className="ui-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                className="ui-input pr-12"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-2xl text-gray-400 transition hover:text-warm-600 focus:outline-none focus:ring-4 focus:ring-warm-100"
+                onClick={() => setShowPassword((isVisible) => !isVisible)}
+                aria-label={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                title={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"
