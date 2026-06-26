@@ -19,6 +19,9 @@
     "dist:win:x64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=x64 && electron-builder --win nsis --x64",
     "dist:win:ia32": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=ia32 && electron-builder --win nsis --ia32",
     "dist:win:all": "npm run dist:win:x64 && npm run dist:win:ia32",
+    "dist:mac:arm64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=arm64 && electron-builder --mac dmg zip --arm64",
+    "dist:mac:x64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=x64 && electron-builder --mac dmg zip --x64",
+    "dist:mac:all": "npm run dist:mac:arm64 && npm run dist:mac:x64",
     "install:all": "npm install && cd apps/client && npm install && cd ../server && npm install",
     "clean:portable": "node scripts/clean-portable.js",
     "version:patch": "node scripts/bump-version.js patch",
@@ -100,6 +103,16 @@
       "createStartMenuShortcut": true,
       "shortcutName": "SADOK",
       "include": "build/installer.nsh"
+    },
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "dmg": {
+      "title": "${productName} ${version}"
     }
   },
   "dependencies": {

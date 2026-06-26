@@ -1,0 +1,72 @@
+name: Build and Publish Releases
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags (e.g., v1.0.63)
+
+permissions:
+  contents: write
+
+jobs:
+  publish-windows:
+    name: Build & Publish (Windows x64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Build client and server
+        run: npm run build
+
+      - name: Prepare server runtime (Windows x64)
+        run: node scripts/prepare-server-runtime.js --arch=x64
+
+      - name: Build and publish installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --x64 --publish always
+
+  publish-macos:
+    name: Build & Publish (macOS)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Build client and server
+        run: npm run build
+
+      - name: Prepare server runtime (macOS arm64)
+        run: node scripts/prepare-server-runtime.js --arch=arm64
+
+      - name: Build and publish installer (macOS arm64)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --mac dmg zip --arm64 --publish always
+
+      - name: Prepare server runtime (macOS x64)
+        run: node scripts/prepare-server-runtime.js --arch=x64
+
+      - name: Build and publish installer (macOS x64)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --mac dmg zip --x64 --publish always
