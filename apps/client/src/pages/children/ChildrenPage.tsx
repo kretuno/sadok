@@ -57,6 +57,7 @@ interface EmployeeOption {
   id: number;
   fullName: string;
   position?: string | null;
+  status?: string | null;
 }
 
 const ChildrenPage: React.FC = () => {

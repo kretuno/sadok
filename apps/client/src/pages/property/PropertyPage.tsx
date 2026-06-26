@@ -8,6 +8,7 @@ interface EmployeeOption {
   id: number;
   fullName: string;
   position: string;
+  status?: string | null;
 }
 
 interface GroupOption {

@@ -10,7 +10,7 @@ const AboutPage: React.FC = () => {
 
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const desktop = window.sadokDesktop;
