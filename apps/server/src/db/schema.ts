@@ -199,6 +199,7 @@ export const employees = sqliteTable('employees', {
   hireDate: integer('hire_date', { mode: 'timestamp' }),
   rate: real('rate'),
   notes: text('notes'),
+  status: text('status').notNull().default('working'),
   userId: integer('user_id').references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });

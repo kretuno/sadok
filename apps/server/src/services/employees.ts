@@ -26,6 +26,7 @@ export interface EmployeeInput {
   rate?: number | null;
   notes?: string;
   userId?: number | null;
+  status?: string;
 }
 
 export interface EmployeeInventoryInput {
@@ -234,6 +235,7 @@ export async function getEmployees() {
       rate: employees.rate,
       notes: employees.notes,
       userId: employees.userId,
+      status: employees.status,
       userFullName: users.fullName,
       userRole: users.role,
     })
@@ -286,6 +288,7 @@ export async function getEmployeeDetails(employeeId: number) {
       rate: employees.rate,
       notes: employees.notes,
       userId: employees.userId,
+      status: employees.status,
       userFullName: users.fullName,
       userRole: users.role,
     })
@@ -424,6 +427,7 @@ export async function createEmployee(input: EmployeeInput) {
       rate: input.rate ?? null,
       notes: input.notes?.trim() || null,
       userId: input.userId ?? null,
+      status: input.status?.trim() || 'working',
     })
     .returning();
 
@@ -438,7 +442,45 @@ export async function createEmployee(input: EmployeeInput) {
 }
 
 export async function updateEmployee(employeeId: number, input: EmployeeInput) {
-  await ensureEmployeeExists(employeeId);
+  const current = await ensureEmployeeExists(employeeId);
+  const nextStatus = input.status?.trim() || 'working';
+
+  // Якщо статус змінюється на "звільнений"
+  if (nextStatus === 'dismissed' && current.status !== 'dismissed') {
+    // Шукаємо всі закріплені за ним ТМЦ
+    const assignedInventory = await db
+      .select()
+      .from(inventory)
+      .where(eq(inventory.responsibleId, employeeId));
+
+    if (assignedInventory.length > 0) {
+      for (const item of assignedInventory) {
+        await db
+          .update(inventory)
+          .set({
+            responsibleId: null,
+            assignmentType: 'storage',
+            groupId: null,
+            outdoorArea: null,
+          })
+          .where(eq(inventory.id, item.id));
+
+        // Логуємо перепризначення в історію ТМЦ
+        await db.insert(inventoryTransfers).values({
+          inventoryId: item.id,
+          fromEmployeeId: employeeId,
+          toEmployeeId: null,
+          fromAssignmentType: item.assignmentType,
+          toAssignmentType: 'storage',
+          fromGroupId: item.groupId,
+          toGroupId: null,
+          fromOutdoorArea: item.outdoorArea,
+          toOutdoorArea: null,
+          note: `Автоматичне списання на склад у зв'язку зі звільненням співробітника "${current.fullName}"`,
+        });
+      }
+    }
+  }
 
   const updated = await db
     .update(employees)
@@ -453,16 +495,30 @@ export async function updateEmployee(employeeId: number, input: EmployeeInput) {
       rate: input.rate ?? null,
       notes: input.notes?.trim() || null,
       userId: input.userId ?? null,
+      status: nextStatus,
     })
     .where(eq(employees.id, employeeId))
     .returning();
 
-  await addEmployeeHistoryEntry({
-    employeeId,
-    eventType: 'employee_updated',
-    title: 'Оновлено картку співробітника',
-    description: `Оновлено дані співробітника "${updated[0].fullName}"`,
-  });
+  if (current.status !== nextStatus) {
+    let statusLabel = 'Працює';
+    if (nextStatus === 'maternity') statusLabel = 'В декреті';
+    if (nextStatus === 'dismissed') statusLabel = 'Звільнений';
+
+    await addEmployeeHistoryEntry({
+      employeeId,
+      eventType: 'employee_status_changed',
+      title: 'Змінено статус співробітника',
+      description: `Статус змінено на "${statusLabel}"`,
+    });
+  } else {
+    await addEmployeeHistoryEntry({
+      employeeId,
+      eventType: 'employee_updated',
+      title: 'Оновлено картку співробітника',
+      description: `Оновлено дані співробітника "${updated[0].fullName}"`,
+    });
+  }
 
   return updated;
 }

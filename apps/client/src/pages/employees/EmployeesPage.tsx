@@ -19,6 +19,7 @@ interface Employee {
   userId?: number | null;
   userFullName?: string | null;
   userRole?: string | null;
+  status?: string | null;
 }
 
 interface UserOption {
@@ -99,6 +100,7 @@ const emptyForm = {
   rate: '',
   notes: '',
   userId: '',
+  status: 'working',
 };
 
 const emptyInventoryForm = {
@@ -143,6 +145,8 @@ const EmployeesPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [groups, setGroups] = useState<GroupOption[]>([]);
+  
+  const [statusFilter, setStatusFilter] = useState<'working' | 'maternity' | 'dismissed' | 'all'>('working');
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -236,6 +240,7 @@ const EmployeesPage: React.FC = () => {
       rate: employee.rate !== null && employee.rate !== undefined ? String(employee.rate) : '',
       notes: employee.notes || '',
       userId: employee.userId ? String(employee.userId) : '',
+      status: employee.status || 'working',
     });
     setIsModalOpen(true);
   };
@@ -249,6 +254,11 @@ const EmployeesPage: React.FC = () => {
       setError(requestError?.response?.data?.message || 'Не вдалося завантажити картку співробітника.');
     }
   };
+
+  const filteredEmployees = useMemo(() => {
+    if (statusFilter === 'all') return employees;
+    return employees.filter((emp) => (emp.status || 'working') === statusFilter);
+  }, [employees, statusFilter]);
 
   const linkedUserOptions = useMemo(
     () => [{ id: '', name: 'Без прив’язки до облікового запису' }, ...users.map((user) => ({
@@ -293,6 +303,24 @@ const EmployeesPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (editingEmployeeId && form.status === 'dismissed') {
+      const currentEmployee = employees.find((emp) => emp.id === editingEmployeeId);
+      if (currentEmployee && (currentEmployee.status || 'working') !== 'dismissed') {
+        const hasAssignedInventory = (employeeDetails?.assignedInventory ?? []).length > 0;
+        if (hasAssignedInventory) {
+          const confirmDismissal = window.confirm(
+            `Увага! За співробітником закріплено ТМЦ (${employeeDetails?.assignedInventory.length} шт.).\n` +
+            `При звільненні всі ці ТМЦ будуть автоматично переведені на склад.\n` +
+            `Ви впевнені, що хочете звільнити співробітника?`
+          );
+          if (!confirmDismissal) {
+            return;
+          }
+        }
+      }
+    }
+
     setSaving(true);
     setError(null);
 
@@ -307,6 +335,7 @@ const EmployeesPage: React.FC = () => {
       rate: form.rate ? Number(form.rate) : null,
       notes: form.notes,
       userId: form.userId ? Number(form.userId) : null,
+      status: form.status,
     };
 
     try {
@@ -559,8 +588,50 @@ const EmployeesPage: React.FC = () => {
 
 
       <div className="bg-white rounded-3xl border border-warm-100 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-warm-100 bg-warm-50/20">
+        <div className="p-5 border-b border-warm-100 bg-warm-50/20 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h4 className="font-bold text-gray-800">Список співробітників</h4>
+          <div className="flex flex-wrap gap-1 bg-warm-100/50 p-1 rounded-2xl w-fit">
+            <button
+              onClick={() => setStatusFilter('working')}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                statusFilter === 'working'
+                  ? 'bg-white text-warm-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Працюють
+            </button>
+            <button
+              onClick={() => setStatusFilter('maternity')}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                statusFilter === 'maternity'
+                  ? 'bg-white text-warm-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              В декреті
+            </button>
+            <button
+              onClick={() => setStatusFilter('dismissed')}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                statusFilter === 'dismissed'
+                  ? 'bg-white text-warm-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Звільнені
+            </button>
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                statusFilter === 'all'
+                  ? 'bg-white text-warm-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Всі
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -570,7 +641,7 @@ const EmployeesPage: React.FC = () => {
         ) : (
           <div className="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr]">
             <div className="grid gap-4 md:grid-cols-2">
-            {employees.map((employee) => (
+            {filteredEmployees.map((employee) => (
               <div
                 key={employee.id}
                 className={`rounded-3xl border p-5 shadow-sm hover:shadow-md transition bg-white cursor-pointer ${
@@ -608,6 +679,19 @@ const EmployeesPage: React.FC = () => {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
+                  {employee.status === 'dismissed' ? (
+                    <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
+                      Звільнений
+                    </span>
+                  ) : employee.status === 'maternity' ? (
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                      В декреті
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
+                      Працює
+                    </span>
+                  )}
                   {employee.userFullName ? (
                     <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                       Акаунт: {employee.userFullName}
@@ -631,7 +715,22 @@ const EmployeesPage: React.FC = () => {
               {employeeDetails ? (
                 <div className="space-y-6">
                   <div className="border-b border-warm-100 pb-4">
-                    <p className="text-xs font-bold uppercase tracking-widest text-warm-500">Картка співробітника</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-bold uppercase tracking-widest text-warm-500">Картка співробітника</p>
+                      {employeeDetails.employee.status === 'dismissed' ? (
+                        <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
+                          Звільнений
+                        </span>
+                      ) : employeeDetails.employee.status === 'maternity' ? (
+                        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                          В декреті
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
+                          Працює
+                        </span>
+                      )}
+                    </div>
                     <h3 className="mt-2 text-2xl font-bold text-gray-800">{employeeDetails.employee.fullName}</h3>
                     <p className="text-sm text-gray-500 mt-1">{employeeDetails.employee.position}</p>
                     <p className="text-sm text-gray-500">{employeeDetails.employee.department || 'Без підрозділу'}</p>
@@ -951,6 +1050,23 @@ const EmployeesPage: React.FC = () => {
               className="ui-input"
             />
           </div>
+
+          {editingEmployeeId && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex items-center text-sm font-bold text-gray-700">
+                Статус співробітника:
+              </div>
+              <CustomSelect
+                options={[
+                  { id: 'working', name: 'Працює' },
+                  { id: 'maternity', name: 'В декреті' },
+                  { id: 'dismissed', name: 'Звільнений' },
+                ]}
+                value={form.status}
+                onChange={(value) => setForm((current) => ({ ...current, status: String(value) }))}
+              />
+            </div>
+          )}
 
           <input
             value={form.address}

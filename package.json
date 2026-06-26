@@ -1,6 +1,6 @@
 {
   "name": "sadok",
-  "version": "1.0.61",
+  "version": "1.0.62",
   "description": "Система управління дитячим садком",
   "main": "main.js",
   "scripts": {
@@ -16,7 +16,9 @@
     "build:server": "cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js",
     "build": "npm run build:client && npm run build:server",
     "dist:win": "npm run build && electron-builder --win nsis",
+    "dist:win:x64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=x64 && electron-builder --win nsis --x64",
     "dist:win:ia32": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=ia32 && electron-builder --win nsis --ia32",
+    "dist:win:all": "npm run dist:win:x64 && npm run dist:win:ia32",
     "install:all": "npm install && cd apps/client && npm install && cd ../server && npm install",
     "clean:portable": "node scripts/clean-portable.js",
     "version:patch": "node scripts/bump-version.js patch",
