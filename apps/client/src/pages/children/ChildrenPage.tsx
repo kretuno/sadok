@@ -120,10 +120,12 @@ const ChildrenPage: React.FC = () => {
   const educatorOptions = useMemo(
     () => [
       { id: '', name: 'Не призначено' },
-      ...employees.map((employee) => ({
-        id: employee.id,
-        name: employee.position ? `${employee.fullName} (${employee.position})` : employee.fullName,
-      })),
+      ...employees
+        .filter((employee) => (employee.status || 'working') !== 'dismissed')
+        .map((employee) => ({
+          id: employee.id,
+          name: employee.position ? `${employee.fullName} (${employee.position})` : employee.fullName,
+        })),
     ],
     [employees]
   );

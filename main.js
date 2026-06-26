@@ -5,6 +5,7 @@ const fs = require('fs');
 const dgram = require('dgram');
 const os = require('os');
 const { spawn } = require('child_process');
+const crypto = require('crypto');
 
 // Вимикаємо автоматичне завантаження оновлень (Сценарій А)
 autoUpdater.autoDownload = false;
@@ -37,35 +38,59 @@ function normalizeServerUrl(value) {
 }
 
 function readDesktopConfig() {
+  const configPath = getConfigPath();
+  let parsed = {};
+  let fileExists = false;
   try {
-    const configPath = getConfigPath();
-    if (!fs.existsSync(configPath)) {
-      return { role: 'server', serverUrl: defaultServerUrl };
+    if (fs.existsSync(configPath)) {
+      parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      fileExists = true;
     }
-
-    const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    const role = parsed.role === 'client' ? 'client' : 'server';
-    const serverUrl = role === 'server'
-      ? defaultServerUrl
-      : normalizeServerUrl(parsed.serverUrl || '');
-
-    return { role, serverUrl };
   } catch (error) {
     console.error('[Electron] Failed to read desktop config:', error);
-    return { role: 'server', serverUrl: defaultServerUrl };
   }
+
+  const role = parsed.role === 'client' ? 'client' : 'server';
+  const serverUrl = role === 'server'
+    ? defaultServerUrl
+    : normalizeServerUrl(parsed.serverUrl || '');
+
+  let jwtSecret = parsed.jwtSecret;
+  let needsWrite = !fileExists || !jwtSecret;
+
+  if (!jwtSecret) {
+    jwtSecret = crypto.randomBytes(32).toString('hex');
+  }
+
+  const config = { role, serverUrl, jwtSecret };
+
+  if (needsWrite) {
+    try {
+      fs.mkdirSync(path.dirname(configPath), { recursive: true });
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+    } catch (error) {
+      console.error('[Electron] Failed to write desktop config during initialization:', error);
+    }
+  }
+
+  return config;
 }
 
 function writeDesktopConfig(nextConfig) {
+  const currentConfig = readDesktopConfig();
   const role = nextConfig.role === 'client' ? 'client' : 'server';
   const serverUrl = role === 'server'
     ? defaultServerUrl
     : normalizeServerUrl(nextConfig.serverUrl || '');
-  const config = { role, serverUrl };
+  const config = { role, serverUrl, jwtSecret: currentConfig.jwtSecret };
   const configPath = getConfigPath();
 
-  fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+  try {
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+  } catch (error) {
+    console.error('[Electron] Failed to write desktop config:', error);
+  }
   return config;
 }
 
@@ -265,7 +290,7 @@ function startServer() {
   console.log('[Electron] Starting production server...');
   const serverPath = getServerEntryPath();
   const serverCwd = process.resourcesPath || __dirname;
-  const jwtSecret = process.env.JWT_SECRET || 'sadok-default-local-jwt-secret-key-2026';
+  const jwtSecret = config.jwtSecret || process.env.JWT_SECRET || 'sadok-default-local-jwt-secret-key-2026';
   
   serverProcess = spawn(process.execPath, ['--max-old-space-size=128', serverPath], {
     cwd: serverCwd,

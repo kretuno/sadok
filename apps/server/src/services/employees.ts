@@ -413,7 +413,17 @@ export async function getEmployeeDetails(employeeId: number) {
   };
 }
 
+const VALID_STATUSES = ['working', 'maternity', 'dismissed'];
+
 export async function createEmployee(input: EmployeeInput) {
+  let initialStatus = 'working';
+  if (input.status !== undefined) {
+    const trimmedStatus = input.status?.trim();
+    if (VALID_STATUSES.includes(trimmedStatus)) {
+      initialStatus = trimmedStatus;
+    }
+  }
+
   const inserted = await db
     .insert(employees)
     .values({
@@ -427,7 +437,7 @@ export async function createEmployee(input: EmployeeInput) {
       rate: input.rate ?? null,
       notes: input.notes?.trim() || null,
       userId: input.userId ?? null,
-      status: input.status?.trim() || 'working',
+      status: initialStatus,
     })
     .returning();
 
@@ -443,7 +453,14 @@ export async function createEmployee(input: EmployeeInput) {
 
 export async function updateEmployee(employeeId: number, input: EmployeeInput) {
   const current = await ensureEmployeeExists(employeeId);
-  const nextStatus = input.status?.trim() || 'working';
+  
+  let nextStatus = current.status || 'working';
+  if (input.status !== undefined) {
+    const trimmedStatus = input.status?.trim();
+    if (VALID_STATUSES.includes(trimmedStatus)) {
+      nextStatus = trimmedStatus;
+    }
+  }
 
   // Якщо статус змінюється на "звільнений"
   if (nextStatus === 'dismissed' && current.status !== 'dismissed') {

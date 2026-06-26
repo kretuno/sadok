@@ -143,10 +143,12 @@ const PropertyPage: React.FC = () => {
 
   const employeeOptions = useMemo(
     () =>
-      employees.map((employee) => ({
-        id: employee.id,
-        name: `${employee.fullName} (${employee.position})`,
-      })),
+      employees
+        .filter((employee) => (employee.status || 'working') !== 'dismissed')
+        .map((employee) => ({
+          id: employee.id,
+          name: `${employee.fullName} (${employee.position})`,
+        })),
     [employees]
   );
 

@@ -1,0 +1,103 @@
+[
+  {
+    "num": 1,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/ACTIVATION_GUIDE.txt",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/CHANGELOG.txt",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/CODEX_FIX_LOG.md",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/DEV_CROSS_PLATFORM.txt",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/GIT_COMMANDS_WIN_MAC.txt",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/GIT_COMMANDS_WIN_MAC_RU.txt",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/README_MIGRATION.txt",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/SADOK_PRO_User_Manual.html",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/SESSION_NOTES.md",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/TODO.md",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/VERSIONING.md",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/README.md",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/index.html",
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/project.md"
+    ],
+    "type": "documents",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_01.json"
+  },
+  {
+    "num": 2,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/public/favicon.svg"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_02.json"
+  },
+  {
+    "num": 3,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/public/icons.svg"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_03.json"
+  },
+  {
+    "num": 4,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/assets/hero.png"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_04.json"
+  },
+  {
+    "num": 5,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/assets/react.svg"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_05.json"
+  },
+  {
+    "num": 6,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/assets/ukraine-coat-of-arms.svg"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_06.json"
+  },
+  {
+    "num": 7,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/assets/vite.svg"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_07.json"
+  },
+  {
+    "num": 8,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/logoSadokUA/image.png"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_08.json"
+  },
+  {
+    "num": 9,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/manual_assets/sadok_child_profile.png"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_09.json"
+  },
+  {
+    "num": 10,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/manual_assets/sadok_manual_cover.png"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_10.json"
+  },
+  {
+    "num": 11,
+    "files": [
+      "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/manual_assets/sadok_print_menu.png"
+    ],
+    "type": "image",
+    "path": "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/graphify-out/.graphify_chunk_11.json"
+  }
+]

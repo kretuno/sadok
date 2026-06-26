@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Code, Mail, Phone, User, ExternalLink, ShieldCheck, Heart, RefreshCw, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import ukraineCoatOfArms from '../../assets/ukraine-coat-of-arms.svg';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -10,20 +10,31 @@ const AboutPage: React.FC = () => {
 
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const desktop = window.sadokDesktop;
     if (!desktop) return;
 
+    const clearCheckTimeout = () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+        updateTimeoutRef.current = null;
+      }
+    };
+
     const unsubscribeAvailable = desktop.onUpdateAvailable?.(() => {
+      clearCheckTimeout();
       setUpdateStatus('available');
     });
 
     const unsubscribeNotAvailable = desktop.onUpdateNotAvailable?.(() => {
+      clearCheckTimeout();
       setUpdateStatus('not-available');
     });
 
     const unsubscribeError = desktop.onUpdateError?.((err) => {
+      clearCheckTimeout();
       setUpdateStatus('error');
       setErrorMessage(err || 'Невідома помилка під час перевірки оновлень');
     });
@@ -32,6 +43,9 @@ const AboutPage: React.FC = () => {
       unsubscribeAvailable?.();
       unsubscribeNotAvailable?.();
       unsubscribeError?.();
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -44,14 +58,32 @@ const AboutPage: React.FC = () => {
 
     setUpdateStatus('checking');
     setErrorMessage('');
+
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+
+    updateTimeoutRef.current = setTimeout(() => {
+      setUpdateStatus('error');
+      setErrorMessage('Перевищено час очікування відповіді від сервера оновлень.');
+      updateTimeoutRef.current = null;
+    }, 15000); // 15 секунд
     
     try {
       const result = await window.sadokDesktop.checkForUpdates();
       if (!result.success) {
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
+          updateTimeoutRef.current = null;
+        }
         setUpdateStatus('error');
         setErrorMessage(result.error || 'Не вдалося підключитися до сервера оновлень.');
       }
     } catch (err: any) {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+        updateTimeoutRef.current = null;
+      }
       setUpdateStatus('error');
       setErrorMessage(err.message || 'Сталася помилка при перевірці оновлень.');
     }

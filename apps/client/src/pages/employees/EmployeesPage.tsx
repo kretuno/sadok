@@ -279,7 +279,7 @@ const EmployeesPage: React.FC = () => {
   const employeeOptions = useMemo(
     () =>
       employees
-        .filter((employee) => employee.id !== selectedEmployeeId)
+        .filter((employee) => employee.id !== selectedEmployeeId && (employee.status || 'working') !== 'dismissed')
         .map((employee) => ({
           id: employee.id,
           name: `${employee.fullName} (${employee.position})`,
@@ -307,16 +307,21 @@ const EmployeesPage: React.FC = () => {
     if (editingEmployeeId && form.status === 'dismissed') {
       const currentEmployee = employees.find((emp) => emp.id === editingEmployeeId);
       if (currentEmployee && (currentEmployee.status || 'working') !== 'dismissed') {
-        const hasAssignedInventory = (employeeDetails?.assignedInventory ?? []).length > 0;
-        if (hasAssignedInventory) {
-          const confirmDismissal = window.confirm(
-            `Увага! За співробітником закріплено ТМЦ (${employeeDetails?.assignedInventory.length} шт.).\n` +
-            `При звільненні всі ці ТМЦ будуть автоматично переведені на склад.\n` +
-            `Ви впевнені, що хочете звільнити співробітника?`
-          );
-          if (!confirmDismissal) {
-            return;
+        try {
+          const response = await api.get(`/employees/${editingEmployeeId}`);
+          const assignedInventory = response.data.assignedInventory ?? [];
+          if (assignedInventory.length > 0) {
+            const confirmDismissal = window.confirm(
+              `Увага! За співробітником закріплено ТМЦ (${assignedInventory.length} шт.).\n` +
+              `При звільненні всі ці ТМЦ будуть автоматично переведені на склад.\n` +
+              `Ви впевнені, що хочете звільнити співробітника?`
+            );
+            if (!confirmDismissal) {
+              return;
+            }
           }
+        } catch (err) {
+          console.error('Не вдалося перевірити ТМЦ співробітника перед звільненням:', err);
         }
       }
     }
@@ -1324,10 +1329,12 @@ const EmployeesPage: React.FC = () => {
 
           {placementForm.assignmentType === 'employee' && (
             <CustomSelect
-              options={employees.map((employee) => ({
-                id: employee.id,
-                name: `${employee.fullName} (${employee.position})`,
-              }))}
+              options={employees
+                .filter((employee) => (employee.status || 'working') !== 'dismissed')
+                .map((employee) => ({
+                  id: employee.id,
+                  name: `${employee.fullName} (${employee.position})`,
+                }))}
               value={placementForm.employeeId}
               onChange={(value) => setPlacementForm((current) => ({ ...current, employeeId: String(value) }))}
               placeholder="Оберіть співробітника"

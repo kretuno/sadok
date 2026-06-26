@@ -1,0 +1,752 @@
+{
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/.vscode/settings.json": {
+    "mtime": 1776517314.0,
+    "ast_hash": "28afd5661a786a9d0dfea6e3daa33a21",
+    "semantic_hash": "28afd5661a786a9d0dfea6e3daa33a21"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/eslint.config.js": {
+    "mtime": 1779989238.0,
+    "ast_hash": "c930939034de646e8d46ad31e997b07e",
+    "semantic_hash": "c930939034de646e8d46ad31e997b07e"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/package.json": {
+    "mtime": 1780167106.0,
+    "ast_hash": "970f1b1cdf4a24c736ac246a09a1f188",
+    "semantic_hash": "970f1b1cdf4a24c736ac246a09a1f188"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/postcss.config.js": {
+    "mtime": 1776415618.0,
+    "ast_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0",
+    "semantic_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/App.tsx": {
+    "mtime": 1780168354.0,
+    "ast_hash": "8c2eb93af51737bd9a069083ffda628a",
+    "semantic_hash": "8c2eb93af51737bd9a069083ffda628a"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/api/axios.ts": {
+    "mtime": 1777228284.0,
+    "ast_hash": "2b940ce05cc83d34423aa27b81b9e8c1",
+    "semantic_hash": "2b940ce05cc83d34423aa27b81b9e8c1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/api/serverConfig.ts": {
+    "mtime": 1780642038.0,
+    "ast_hash": "fabfc2d9cf83700553a284b6c44ee7b1",
+    "semantic_hash": "fabfc2d9cf83700553a284b6c44ee7b1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/NetworkBootstrap.tsx": {
+    "mtime": 1780642834.0,
+    "ast_hash": "56d66c55a34bd04cd0f7cb79dc2e84ac",
+    "semantic_hash": "56d66c55a34bd04cd0f7cb79dc2e84ac"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/chat/ChatPanel.tsx": {
+    "mtime": 1777108966.0,
+    "ast_hash": "35c5f5be9aee5c693c2b3f39937c3e23",
+    "semantic_hash": "35c5f5be9aee5c693c2b3f39937c3e23"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/children/ChildQRCode.tsx": {
+    "mtime": 1777058492.0,
+    "ast_hash": "ac7ae238fb2d3b5c251307a090956cb4",
+    "semantic_hash": "ac7ae238fb2d3b5c251307a090956cb4"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/layout/Layout.tsx": {
+    "mtime": 1776451958.0,
+    "ast_hash": "1981db5be16d15b886a2cf17ccfaeedb",
+    "semantic_hash": "1981db5be16d15b886a2cf17ccfaeedb"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/layout/Sidebar.tsx": {
+    "mtime": 1780166924.0,
+    "ast_hash": "de1891b31e29bdd412ee42cabcf252ac",
+    "semantic_hash": "de1891b31e29bdd412ee42cabcf252ac"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/layout/UpdateNotification.tsx": {
+    "mtime": 1780168348.0,
+    "ast_hash": "58fb3f578ab7da980be1f4540d7e1197",
+    "semantic_hash": "58fb3f578ab7da980be1f4540d7e1197"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/ui/CustomSelect.tsx": {
+    "mtime": 1776626932.0,
+    "ast_hash": "e30342f67bc10f00fed70b60a4c8d57c",
+    "semantic_hash": "e30342f67bc10f00fed70b60a4c8d57c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/ui/DatePicker.tsx": {
+    "mtime": 1776543090.0,
+    "ast_hash": "541dcbeec73f6aadd4ee8e55d5d29021",
+    "semantic_hash": "541dcbeec73f6aadd4ee8e55d5d29021"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/ui/Modal.tsx": {
+    "mtime": 1776625272.0,
+    "ast_hash": "18346eeebbf59abdfcfaf9eb045fd5a1",
+    "semantic_hash": "18346eeebbf59abdfcfaf9eb045fd5a1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/components/ui/PrintMenu.tsx": {
+    "mtime": 1780170594.0,
+    "ast_hash": "c9045b91da3b0d4a9d897b984ae76bce",
+    "semantic_hash": "c9045b91da3b0d4a9d897b984ae76bce"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/contexts/AuthContext.tsx": {
+    "mtime": 1776498562.0,
+    "ast_hash": "7301a5e31adb4ffd23c4caef353795c8",
+    "semantic_hash": "7301a5e31adb4ffd23c4caef353795c8"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/contexts/SettingsContext.tsx": {
+    "mtime": 1780081562.0,
+    "ast_hash": "c19ce13b446ee8905a133c273c70764c",
+    "semantic_hash": "c19ce13b446ee8905a133c273c70764c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/contexts/SocketContext.tsx": {
+    "mtime": 1777228288.0,
+    "ast_hash": "de86c3b3fa9459fcf39d600bfa53fa83",
+    "semantic_hash": "de86c3b3fa9459fcf39d600bfa53fa83"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/contexts/ThemeContext.tsx": {
+    "mtime": 1776496900.0,
+    "ast_hash": "80797cf36b07974e146e29461500d1d1",
+    "semantic_hash": "80797cf36b07974e146e29461500d1d1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/data/quotes.ts": {
+    "mtime": 1776623776.0,
+    "ast_hash": "43ca4d9468ba035b77cc696c2d033be5",
+    "semantic_hash": "43ca4d9468ba035b77cc696c2d033be5"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/i18n.ts": {
+    "mtime": 1777058420.0,
+    "ast_hash": "48ce5059fe4bcc078af8c4694b563d03",
+    "semantic_hash": "48ce5059fe4bcc078af8c4694b563d03"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/main.tsx": {
+    "mtime": 1777923940.0,
+    "ast_hash": "d7926a6f15b10c584626a457c8f14907",
+    "semantic_hash": "d7926a6f15b10c584626a457c8f14907"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/about/AboutPage.tsx": {
+    "mtime": 1781088626.68,
+    "ast_hash": "30f8f3558769a8f075e7a92340d84b8d",
+    "semantic_hash": "30f8f3558769a8f075e7a92340d84b8d"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/attendance/AttendancePage.tsx": {
+    "mtime": 1776543100.0,
+    "ast_hash": "f0d008ab409d7596d612085385737cec",
+    "semantic_hash": "f0d008ab409d7596d612085385737cec"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/auth/LoginPage.tsx": {
+    "mtime": 1781251966.8,
+    "ast_hash": "2a7cdbae0ee4bf0b150b702f7fbda5cb",
+    "semantic_hash": "2a7cdbae0ee4bf0b150b702f7fbda5cb"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/children/ChildrenPage.tsx": {
+    "mtime": 1780079468.0,
+    "ast_hash": "850b29bb5214edbba3726b0df20ca3d1",
+    "semantic_hash": "850b29bb5214edbba3726b0df20ca3d1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/dashboard/DashboardPage.tsx": {
+    "mtime": 1780166308.0,
+    "ast_hash": "0d245f0d42345b8e59a072e856f37e06",
+    "semantic_hash": "0d245f0d42345b8e59a072e856f37e06"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/employees/EmployeesPage.tsx": {
+    "mtime": 1777228312.0,
+    "ast_hash": "b5f9a88e2166547d35b603295cdca79c",
+    "semantic_hash": "b5f9a88e2166547d35b603295cdca79c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/inventory/InventoryPage.tsx": {
+    "mtime": 1781076336.36,
+    "ast_hash": "db4e82fbccfd1329bb2ddb7b7c28f4ba",
+    "semantic_hash": "db4e82fbccfd1329bb2ddb7b7c28f4ba"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/medical/MedicalPage.tsx": {
+    "mtime": 1777109744.0,
+    "ast_hash": "b2e6dbc3b137e727241d7930ae9c257a",
+    "semantic_hash": "b2e6dbc3b137e727241d7930ae9c257a"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/medical/tabs/IllnessesTab.tsx": {
+    "mtime": 1777059170.0,
+    "ast_hash": "a89b5933702f616d3541cc019f77fdca",
+    "semantic_hash": "a89b5933702f616d3541cc019f77fdca"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/medical/tabs/MedicalCardModal.tsx": {
+    "mtime": 1777110398.0,
+    "ast_hash": "5b848ffe5255e7dc5aee2e2ef28c6ae3",
+    "semantic_hash": "5b848ffe5255e7dc5aee2e2ef28c6ae3"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/medical/tabs/MedicalCardsTab.tsx": {
+    "mtime": 1777110368.0,
+    "ast_hash": "f55c065bdc94ed5058dcc44f3acd6ae6",
+    "semantic_hash": "f55c065bdc94ed5058dcc44f3acd6ae6"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/medical/tabs/MedicationsTab.tsx": {
+    "mtime": 1779989296.0,
+    "ast_hash": "a6f3aa805f181167f33b68eedbfba7bf",
+    "semantic_hash": "a6f3aa805f181167f33b68eedbfba7bf"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/medical/tabs/VaccinationsTab.tsx": {
+    "mtime": 1777109444.0,
+    "ast_hash": "bfa482fd732995e6cc853879c5a58aaf",
+    "semantic_hash": "bfa482fd732995e6cc853879c5a58aaf"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/menu/MenuPage.tsx": {
+    "mtime": 1781081895.08,
+    "ast_hash": "6ce8c0e6ca8c314ec12f5adc4679da3c",
+    "semantic_hash": "6ce8c0e6ca8c314ec12f5adc4679da3c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/property/PropertyPage.tsx": {
+    "mtime": 1776775862.0,
+    "ast_hash": "eb1a00592be3e8ca593cad8007741957",
+    "semantic_hash": "eb1a00592be3e8ca593cad8007741957"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/psychologist/PsychologistPage.tsx": {
+    "mtime": 1780174730.0,
+    "ast_hash": "9a907521ec72874040c37cac8e4cec25",
+    "semantic_hash": "9a907521ec72874040c37cac8e4cec25"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/reports/ReportsPage.tsx": {
+    "mtime": 1780003018.0,
+    "ast_hash": "2fc9e3999fced9233e2080b4c1418e89",
+    "semantic_hash": "2fc9e3999fced9233e2080b4c1418e89"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/settings/SettingsPage.tsx": {
+    "mtime": 1781094246.83,
+    "ast_hash": "07ebce45c0900a1428be3bdd3ceeb15f",
+    "semantic_hash": "07ebce45c0900a1428be3bdd3ceeb15f"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/settings/tabs/BackupSettingsTab.tsx": {
+    "mtime": 1780077954.0,
+    "ast_hash": "c7536ed146419691f122de0daef8550e",
+    "semantic_hash": "c7536ed146419691f122de0daef8550e"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/settings/tabs/KindergartenSettingsTab.tsx": {
+    "mtime": 1777109426.0,
+    "ast_hash": "17237f75068f3de9fba5eab709b81562",
+    "semantic_hash": "17237f75068f3de9fba5eab709b81562"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/settings/tabs/LicenseSettingsTab.tsx": {
+    "mtime": 1781094125.69,
+    "ast_hash": "7fb71ad1e2593981e7dc78e7cd408a00",
+    "semantic_hash": "7fb71ad1e2593981e7dc78e7cd408a00"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/settings/tabs/ThemeSettingsTab.tsx": {
+    "mtime": 1776544896.0,
+    "ast_hash": "5f7c46514a303d9306604edf14647a92",
+    "semantic_hash": "5f7c46514a303d9306604edf14647a92"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/settings/tabs/UsersSettingsTab.tsx": {
+    "mtime": 1777057758.0,
+    "ast_hash": "b3e6579e59a392ea932bfc058dc4fc7d",
+    "semantic_hash": "b3e6579e59a392ea932bfc058dc4fc7d"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/setup/ServerDiscoveryScreen.tsx": {
+    "mtime": 1780642038.0,
+    "ast_hash": "06d4bb645129d9a4b70f09eedd3728fc",
+    "semantic_hash": "06d4bb645129d9a4b70f09eedd3728fc"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/pages/utilities/UtilitiesPage.tsx": {
+    "mtime": 1777057666.0,
+    "ast_hash": "9a8cf627b61f980fff397b209a8a41aa",
+    "semantic_hash": "9a8cf627b61f980fff397b209a8a41aa"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/vite-env.d.ts": {
+    "mtime": 1780168340.0,
+    "ast_hash": "8ee39202b15a2de1a411d648da477fbe",
+    "semantic_hash": "8ee39202b15a2de1a411d648da477fbe"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/tailwind.config.js": {
+    "mtime": 1776457068.0,
+    "ast_hash": "7fedc85dbacf82fc0f8792660e712e06",
+    "semantic_hash": "7fedc85dbacf82fc0f8792660e712e06"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/tsconfig.app.json": {
+    "mtime": 1776415190.0,
+    "ast_hash": "b885d5f97cf6fc2c1e7997d4b8abfb88",
+    "semantic_hash": "b885d5f97cf6fc2c1e7997d4b8abfb88"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/tsconfig.json": {
+    "mtime": 1776415190.0,
+    "ast_hash": "a3d39fa780ebff65444de257f291ce6c",
+    "semantic_hash": "a3d39fa780ebff65444de257f291ce6c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/tsconfig.node.json": {
+    "mtime": 1776415190.0,
+    "ast_hash": "70bdd0a673bcfc0e828080b306e7c680",
+    "semantic_hash": "70bdd0a673bcfc0e828080b306e7c680"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/vite.config.ts": {
+    "mtime": 1777228472.0,
+    "ast_hash": "0196a960637c316b376792235c98a704",
+    "semantic_hash": "0196a960637c316b376792235c98a704"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/drizzle.config.ts": {
+    "mtime": 1776414368.0,
+    "ast_hash": "e0435105f64d308f30a8e0dd6128fc92",
+    "semantic_hash": "e0435105f64d308f30a8e0dd6128fc92"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/drizzle/0000_youthful_peter_parker.sql": {
+    "mtime": 1776414378.0,
+    "ast_hash": "702fd6761b49e88a5a9b48221c66a517",
+    "semantic_hash": "702fd6761b49e88a5a9b48221c66a517"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/drizzle/0001_nosy_tony_stark.sql": {
+    "mtime": 1780001602.0,
+    "ast_hash": "57f82f8ae16ba8930491cfa925628d70",
+    "semantic_hash": "57f82f8ae16ba8930491cfa925628d70"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/drizzle/meta/0000_snapshot.json": {
+    "mtime": 1776414378.0,
+    "ast_hash": "b19c7b648702c1157431b6d64f0d2ab8",
+    "semantic_hash": "b19c7b648702c1157431b6d64f0d2ab8"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/drizzle/meta/0001_snapshot.json": {
+    "mtime": 1780001602.0,
+    "ast_hash": "d75c5af66fe0d0afa3ace48f9cfaf8a9",
+    "semantic_hash": "d75c5af66fe0d0afa3ace48f9cfaf8a9"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/drizzle/meta/_journal.json": {
+    "mtime": 1780001602.0,
+    "ast_hash": "884159d6766a919972945d46da199d66",
+    "semantic_hash": "884159d6766a919972945d46da199d66"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/package.json": {
+    "mtime": 1780167106.0,
+    "ast_hash": "3e7a4105ac31f900c479b388a9977b68",
+    "semantic_hash": "3e7a4105ac31f900c479b388a9977b68"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/attendance.ts": {
+    "mtime": 1776460360.0,
+    "ast_hash": "f1ff725d9b86e0dcc33cd2c22cb50544",
+    "semantic_hash": "f1ff725d9b86e0dcc33cd2c22cb50544"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/auth.ts": {
+    "mtime": 1780609948.0,
+    "ast_hash": "673b54b901568f3c798ad7242cf7ee06",
+    "semantic_hash": "673b54b901568f3c798ad7242cf7ee06"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/chat.ts": {
+    "mtime": 1776622420.0,
+    "ast_hash": "09a50fb0822183aab64075ee72727b14",
+    "semantic_hash": "09a50fb0822183aab64075ee72727b14"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/children.ts": {
+    "mtime": 1780078280.0,
+    "ast_hash": "a742efea54a63313d7fb67547590a7e3",
+    "semantic_hash": "a742efea54a63313d7fb67547590a7e3"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/employees.ts": {
+    "mtime": 1780078030.0,
+    "ast_hash": "1a0cfdf1f5cb430abb6abfadcba631c2",
+    "semantic_hash": "1a0cfdf1f5cb430abb6abfadcba631c2"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/invoices.ts": {
+    "mtime": 1780078000.0,
+    "ast_hash": "e82bbf40baa817c89d74febf22631c2c",
+    "semantic_hash": "e82bbf40baa817c89d74febf22631c2c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/medical.ts": {
+    "mtime": 1780078016.0,
+    "ast_hash": "5db640660f3f9d98fde8b8cecb113680",
+    "semantic_hash": "5db640660f3f9d98fde8b8cecb113680"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/menus.ts": {
+    "mtime": 1777055470.0,
+    "ast_hash": "d450541458d994b230679d2df0a347ee",
+    "semantic_hash": "d450541458d994b230679d2df0a347ee"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/products.ts": {
+    "mtime": 1777055436.0,
+    "ast_hash": "45b61c2fd048c05c509a21c352fd93be",
+    "semantic_hash": "45b61c2fd048c05c509a21c352fd93be"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/recipes.ts": {
+    "mtime": 1780078284.0,
+    "ast_hash": "d5e28621e6c7f85e3309a7e2caf12bb8",
+    "semantic_hash": "d5e28621e6c7f85e3309a7e2caf12bb8"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/reports.ts": {
+    "mtime": 1780002884.0,
+    "ast_hash": "8f9dc75cea5fd8811d7b2a8771a61dc1",
+    "semantic_hash": "8f9dc75cea5fd8811d7b2a8771a61dc1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/suppliers.ts": {
+    "mtime": 1776628884.0,
+    "ast_hash": "5a93eb33feb976ce826082c0b7332e13",
+    "semantic_hash": "5a93eb33feb976ce826082c0b7332e13"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/system.ts": {
+    "mtime": 1780081560.0,
+    "ast_hash": "6fbe61c11221656db1eedb9f3797f946",
+    "semantic_hash": "6fbe61c11221656db1eedb9f3797f946"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/users.ts": {
+    "mtime": 1777055402.0,
+    "ast_hash": "f73ccbaa822c43aaefd96604aa02efd3",
+    "semantic_hash": "f73ccbaa822c43aaefd96604aa02efd3"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/controllers/utilities.ts": {
+    "mtime": 1780078024.0,
+    "ast_hash": "d6b94c3a6ae5711ee215098fd2d669be",
+    "semantic_hash": "d6b94c3a6ae5711ee215098fd2d669be"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/check_db.ts": {
+    "mtime": 1776420928.0,
+    "ast_hash": "4a750aad3a7327d8a18c37ac6fc19846",
+    "semantic_hash": "4a750aad3a7327d8a18c37ac6fc19846"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/index.ts": {
+    "mtime": 1780609018.0,
+    "ast_hash": "0527ab11bafd99fdfff81d1e3dcf3885",
+    "semantic_hash": "0527ab11bafd99fdfff81d1e3dcf3885"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/migrate_medical.ts": {
+    "mtime": 1776542516.0,
+    "ast_hash": "db76e36196e949fb28217cbb250cc7f9",
+    "semantic_hash": "db76e36196e949fb28217cbb250cc7f9"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/migrate_phase3.ts": {
+    "mtime": 1776449284.0,
+    "ast_hash": "168214be8a65e41edbeb9d908b515e0c",
+    "semantic_hash": "168214be8a65e41edbeb9d908b515e0c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/reset_admin.ts": {
+    "mtime": 1776423934.0,
+    "ast_hash": "faeeb6d85c49882ee933f9350b82bd59",
+    "semantic_hash": "faeeb6d85c49882ee933f9350b82bd59"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/schema.ts": {
+    "mtime": 1780173838.0,
+    "ast_hash": "caf5aaca9ec7771063d9ee578858e47e",
+    "semantic_hash": "caf5aaca9ec7771063d9ee578858e47e"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/seed.ts": {
+    "mtime": 1776420102.0,
+    "ast_hash": "1c84bafe9a7c3f945d3d09cc2991e0ac",
+    "semantic_hash": "1c84bafe9a7c3f945d3d09cc2991e0ac"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/seed_klopotenko.ts": {
+    "mtime": 1776459758.0,
+    "ast_hash": "5ee6048538f0cdfd066d56010c36872e",
+    "semantic_hash": "5ee6048538f0cdfd066d56010c36872e"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/seed_menu_test_data.ts": {
+    "mtime": 1776501464.0,
+    "ast_hash": "97ede76a64d449b6b97f386cc4f7b7b7",
+    "semantic_hash": "97ede76a64d449b6b97f386cc4f7b7b7"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/db/update_schema_manual.ts": {
+    "mtime": 1780001610.0,
+    "ast_hash": "88c405f1a1bb1c31327a6cd84580c4fd",
+    "semantic_hash": "88c405f1a1bb1c31327a6cd84580c4fd"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/index.ts": {
+    "mtime": 1780077942.0,
+    "ast_hash": "0b56151783c902c5ed44502f4e0f99fe",
+    "semantic_hash": "0b56151783c902c5ed44502f4e0f99fe"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/middleware/auth.ts": {
+    "mtime": 1780609952.0,
+    "ast_hash": "3b33ea9a1aad120f35b88a9d0d410021",
+    "semantic_hash": "3b33ea9a1aad120f35b88a9d0d410021"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/paths.ts": {
+    "mtime": 1777228348.0,
+    "ast_hash": "698047798d5f35def4491a872e6402f1",
+    "semantic_hash": "698047798d5f35def4491a872e6402f1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/attendance.ts": {
+    "mtime": 1776460376.0,
+    "ast_hash": "8ff5b2f30055396d2bc56ea03ec094fc",
+    "semantic_hash": "8ff5b2f30055396d2bc56ea03ec094fc"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/auth.ts": {
+    "mtime": 1779998360.0,
+    "ast_hash": "b693df7dc5cb1fc8a07cb48ec1a8580b",
+    "semantic_hash": "b693df7dc5cb1fc8a07cb48ec1a8580b"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/chat.ts": {
+    "mtime": 1776622428.0,
+    "ast_hash": "d5daa85fa652d4f88f92b94e621a00c2",
+    "semantic_hash": "d5daa85fa652d4f88f92b94e621a00c2"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/children.ts": {
+    "mtime": 1777228366.0,
+    "ast_hash": "5b47c92de679b22fd8856a8898c82f8d",
+    "semantic_hash": "5b47c92de679b22fd8856a8898c82f8d"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/employees.ts": {
+    "mtime": 1776536512.0,
+    "ast_hash": "18d33ae452cc25a6e79c7810c6e7982c",
+    "semantic_hash": "18d33ae452cc25a6e79c7810c6e7982c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/invoices.ts": {
+    "mtime": 1776628898.0,
+    "ast_hash": "06735afc2a4187f88414ce79f04df6d1",
+    "semantic_hash": "06735afc2a4187f88414ce79f04df6d1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/medical.ts": {
+    "mtime": 1776762220.0,
+    "ast_hash": "ed6ba899130c99744ccb24f3a48bcf29",
+    "semantic_hash": "ed6ba899130c99744ccb24f3a48bcf29"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/menus.ts": {
+    "mtime": 1776773304.0,
+    "ast_hash": "e2ff00c5efac4a96ea8ad43baa680c4a",
+    "semantic_hash": "e2ff00c5efac4a96ea8ad43baa680c4a"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/products.ts": {
+    "mtime": 1776632192.0,
+    "ast_hash": "484b8aade9061367a5956a8f924d2194",
+    "semantic_hash": "484b8aade9061367a5956a8f924d2194"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/psychologist.ts": {
+    "mtime": 1780173876.0,
+    "ast_hash": "10b149ca6e52d73493c5d8e94443e540",
+    "semantic_hash": "10b149ca6e52d73493c5d8e94443e540"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/recipes.ts": {
+    "mtime": 1776450882.0,
+    "ast_hash": "36fba702367652e63ce21f4066d82794",
+    "semantic_hash": "36fba702367652e63ce21f4066d82794"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/reports.ts": {
+    "mtime": 1777055520.0,
+    "ast_hash": "d53a3bf97dbbea6e0df68fe9716e685c",
+    "semantic_hash": "d53a3bf97dbbea6e0df68fe9716e685c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/suppliers.ts": {
+    "mtime": 1776628914.0,
+    "ast_hash": "4301557c0c8b49c9ea1e7563d0977f7e",
+    "semantic_hash": "4301557c0c8b49c9ea1e7563d0977f7e"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/system.ts": {
+    "mtime": 1777228372.0,
+    "ast_hash": "7c0d7a15417a0b0f0407cc3b07e5f1c7",
+    "semantic_hash": "7c0d7a15417a0b0f0407cc3b07e5f1c7"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/users.ts": {
+    "mtime": 1777055406.0,
+    "ast_hash": "952ca576defc7816173fee5fe00d2c84",
+    "semantic_hash": "952ca576defc7816173fee5fe00d2c84"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/routes/utilities.ts": {
+    "mtime": 1776763592.0,
+    "ast_hash": "1b5a1e7ff1742cf8a681ca5683e8b5b2",
+    "semantic_hash": "1b5a1e7ff1742cf8a681ca5683e8b5b2"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/scheduler.ts": {
+    "mtime": 1780077936.0,
+    "ast_hash": "af796ef732286c131945b39330e38c6d",
+    "semantic_hash": "af796ef732286c131945b39330e38c6d"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/services/attendance.ts": {
+    "mtime": 1776502046.0,
+    "ast_hash": "46363042f6778e86c03063bdf3e47fdb",
+    "semantic_hash": "46363042f6778e86c03063bdf3e47fdb"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/services/audit.ts": {
+    "mtime": 1777055654.0,
+    "ast_hash": "30168559beaeb3412f7f9db3128dcf9d",
+    "semantic_hash": "30168559beaeb3412f7f9db3128dcf9d"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/services/children.ts": {
+    "mtime": 1776762292.0,
+    "ast_hash": "49f57caf1ba3f4118af3a731c00744f2",
+    "semantic_hash": "49f57caf1ba3f4118af3a731c00744f2"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/services/employees.ts": {
+    "mtime": 1777228358.0,
+    "ast_hash": "5c44b58f285d001b590771eab0a18db6",
+    "semantic_hash": "5c44b58f285d001b590771eab0a18db6"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/services/menus.ts": {
+    "mtime": 1780002872.0,
+    "ast_hash": "a0a38c6a582d1fac370c97b84c83f0da",
+    "semantic_hash": "a0a38c6a582d1fac370c97b84c83f0da"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/services/recipes.ts": {
+    "mtime": 1776517302.0,
+    "ast_hash": "abc50ff7a890aee9e124903caaeb659e",
+    "semantic_hash": "abc50ff7a890aee9e124903caaeb659e"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/services/stock.ts": {
+    "mtime": 1776628860.0,
+    "ast_hash": "8b4d9cbe698a63daf1f54d00b1155091",
+    "semantic_hash": "8b4d9cbe698a63daf1f54d00b1155091"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/socket.ts": {
+    "mtime": 1777108966.0,
+    "ast_hash": "7cc9356e830e458576e66ab063a4eed7",
+    "semantic_hash": "7cc9356e830e458576e66ab063a4eed7"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/src/test.ts": {
+    "mtime": 1776423826.0,
+    "ast_hash": "da5d1181ffbc717e18c3feb2f363c4ad",
+    "semantic_hash": "da5d1181ffbc717e18c3feb2f363c4ad"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/test_env.js": {
+    "mtime": 1779999022.0,
+    "ast_hash": "d4d1a0f37554de8fd3bed6dffd348567",
+    "semantic_hash": "d4d1a0f37554de8fd3bed6dffd348567"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/server/tsconfig.json": {
+    "mtime": 1776545112.0,
+    "ast_hash": "c811f8675df259f6ada8bf095aeeb826",
+    "semantic_hash": "c811f8675df259f6ada8bf095aeeb826"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/main.js": {
+    "mtime": 1781080584.22,
+    "ast_hash": "68074bdcd1e7237143d1488464f87ab6",
+    "semantic_hash": "68074bdcd1e7237143d1488464f87ab6"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/package.json": {
+    "mtime": 1781073353.7,
+    "ast_hash": "8f890e8f5ac403a02f33b3658bf83f3c",
+    "semantic_hash": "8f890e8f5ac403a02f33b3658bf83f3c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/preload.js": {
+    "mtime": 1780168332.0,
+    "ast_hash": "d6363ee1c4f7e0ba664e0042c5843f83",
+    "semantic_hash": "d6363ee1c4f7e0ba664e0042c5843f83"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/scripts/bump-version.js": {
+    "mtime": 1776858926.0,
+    "ast_hash": "528a72f700a7e8abd4729f1be2142030",
+    "semantic_hash": "528a72f700a7e8abd4729f1be2142030"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/scripts/changelog-new.js": {
+    "mtime": 1776859116.0,
+    "ast_hash": "f30dad3d634deb97d38d819d6f319db3",
+    "semantic_hash": "f30dad3d634deb97d38d819d6f319db3"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/scripts/clean-portable.js": {
+    "mtime": 1776777906.0,
+    "ast_hash": "45ce5eac17a2cb42520bf7ef6b8ac877",
+    "semantic_hash": "45ce5eac17a2cb42520bf7ef6b8ac877"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/scripts/prepare-server-runtime.js": {
+    "mtime": 1780652172.0,
+    "ast_hash": "8b48f83ee02694a06fc98f3b957bff01",
+    "semantic_hash": "8b48f83ee02694a06fc98f3b957bff01"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/scripts/start-electron.js": {
+    "mtime": 1776777914.0,
+    "ast_hash": "242e7cfbe6408c28a17bf7d5881e708b",
+    "semantic_hash": "242e7cfbe6408c28a17bf7d5881e708b"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/ACTIVATION_GUIDE.txt": {
+    "mtime": 1776631036.0,
+    "ast_hash": "b8f05e6e9fea78d19db84317d84f243f",
+    "semantic_hash": "b8f05e6e9fea78d19db84317d84f243f"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/CHANGELOG.txt": {
+    "mtime": 1780167112.0,
+    "ast_hash": "042785294d78dc2bf3205351f63f99cc",
+    "semantic_hash": "042785294d78dc2bf3205351f63f99cc"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/CODEX_FIX_LOG.md": {
+    "mtime": 1779989670.0,
+    "ast_hash": "b0c73cc71c53e25a9e274ec73881a2d8",
+    "semantic_hash": "b0c73cc71c53e25a9e274ec73881a2d8"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/DEV_CROSS_PLATFORM.txt": {
+    "mtime": 1781073366.86,
+    "ast_hash": "4ad3196e2d8b13ffd758811504db122b",
+    "semantic_hash": "4ad3196e2d8b13ffd758811504db122b"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/GIT_COMMANDS_WIN_MAC.txt": {
+    "mtime": 1781073547.3,
+    "ast_hash": "b0c70f028e5166eef6f64dc9b9ccf676",
+    "semantic_hash": "b0c70f028e5166eef6f64dc9b9ccf676"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/GIT_COMMANDS_WIN_MAC_RU.txt": {
+    "mtime": 1781073610.01,
+    "ast_hash": "ce895b9832ea197828f810b2c4226ce0",
+    "semantic_hash": "ce895b9832ea197828f810b2c4226ce0"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/README_MIGRATION.txt": {
+    "mtime": 1776777906.0,
+    "ast_hash": "5b3dbdf3257f3f30de769f6902e8ba61",
+    "semantic_hash": "5b3dbdf3257f3f30de769f6902e8ba61"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/SADOK_PRO_User_Manual.html": {
+    "mtime": 1780083154.0,
+    "ast_hash": "2b90c739db5326c3ca88030bef915cfc",
+    "semantic_hash": "2b90c739db5326c3ca88030bef915cfc"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/SESSION_NOTES.md": {
+    "mtime": 1780167118.0,
+    "ast_hash": "3547423256ce20e435a93e5b2b6803f1",
+    "semantic_hash": "3547423256ce20e435a93e5b2b6803f1"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/TODO.md": {
+    "mtime": 1780167128.0,
+    "ast_hash": "083c8b071eb09a13bbfa96b209d4908c",
+    "semantic_hash": "083c8b071eb09a13bbfa96b209d4908c"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/VERSIONING.md": {
+    "mtime": 1776858852.0,
+    "ast_hash": "eeca98ad8f9c773ecdb812cc051d98a2",
+    "semantic_hash": "eeca98ad8f9c773ecdb812cc051d98a2"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/README.md": {
+    "mtime": 1776415190.0,
+    "ast_hash": "f6e3faf55d738cf2affe1b44195f27cf",
+    "semantic_hash": "f6e3faf55d738cf2affe1b44195f27cf"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/index.html": {
+    "mtime": 1777228480.0,
+    "ast_hash": "3aee71457640ada8212dea718ca73213",
+    "semantic_hash": "3aee71457640ada8212dea718ca73213"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/project.md": {
+    "mtime": 1776517130.0,
+    "ast_hash": "1868f58fb7bd447a828765901eb5036a",
+    "semantic_hash": "1868f58fb7bd447a828765901eb5036a"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/public/favicon.svg": {
+    "mtime": 1776415190.0,
+    "ast_hash": "7e840862161341271697daa99a40d76b",
+    "semantic_hash": "7e840862161341271697daa99a40d76b"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/public/icons.svg": {
+    "mtime": 1776415190.0,
+    "ast_hash": "3b4fcfcf393eca4d264dca4a4663bc37",
+    "semantic_hash": "3b4fcfcf393eca4d264dca4a4663bc37"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/assets/hero.png": {
+    "mtime": 1776415190.0,
+    "ast_hash": "5cf2b0762834cdddc0dd3ec1397b5011",
+    "semantic_hash": "5cf2b0762834cdddc0dd3ec1397b5011"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/assets/react.svg": {
+    "mtime": 1776415190.0,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/assets/ukraine-coat-of-arms.svg": {
+    "mtime": 1776757356.0,
+    "ast_hash": "bcb978211ef84814b79d305ca47a8b4a",
+    "semantic_hash": "bcb978211ef84814b79d305ca47a8b4a"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/apps/client/src/assets/vite.svg": {
+    "mtime": 1776415190.0,
+    "ast_hash": "9960a24288958394ac50e57ff638b036",
+    "semantic_hash": "9960a24288958394ac50e57ff638b036"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/logoSadokUA/image.png": {
+    "mtime": 1776682498.0,
+    "ast_hash": "8fc7425cb3d547a371f4c493530d6bb0",
+    "semantic_hash": "8fc7425cb3d547a371f4c493530d6bb0"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/manual_assets/sadok_child_profile.png": {
+    "mtime": 1780082068.0,
+    "ast_hash": "c1b90af4f0dcb054fe2d16c23b7778e5",
+    "semantic_hash": "c1b90af4f0dcb054fe2d16c23b7778e5"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/manual_assets/sadok_manual_cover.png": {
+    "mtime": 1780082052.0,
+    "ast_hash": "0a8c4e187fdb4bdc3480f6dd9c224fc6",
+    "semantic_hash": "0a8c4e187fdb4bdc3480f6dd9c224fc6"
+  },
+  "/Volumes/Asus/OSIPIX/WIN/SADOK_FINAL/manual_assets/sadok_print_menu.png": {
+    "mtime": 1780082084.0,
+    "ast_hash": "2413a42eacdf3f5d13e71e4e7a65edfb",
+    "semantic_hash": "2413a42eacdf3f5d13e71e4e7a65edfb"
+  }
+}

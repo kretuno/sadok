@@ -86,7 +86,7 @@ const DashboardPage: React.FC = () => {
         weekMenusCount: menus.length,
         confirmedMenusCount: menus.filter((item) => item.isConfirmed).length,
         totalChildren: children.length,
-        totalEmployees: employees.length,
+        totalEmployees: employees.filter((emp) => (emp.status || 'working') !== 'dismissed').length,
         hasMenuToday: !!todayMenu,
         pendingInvoices: allInvoices.filter(i => i.status === 'draft').length
       });
