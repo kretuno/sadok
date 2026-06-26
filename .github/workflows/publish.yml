@@ -31,10 +31,18 @@ jobs:
       - name: Prepare server runtime (Windows x64)
         run: node scripts/prepare-server-runtime.js --arch=x64
 
-      - name: Build and publish installer
+      - name: Build and publish installer (Windows x64)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win nsis --x64 --publish always
+
+      - name: Prepare server runtime (Windows ia32)
+        run: node scripts/prepare-server-runtime.js --arch=ia32
+
+      - name: Build and publish installer (Windows ia32)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --ia32 --publish always
 
   publish-macos:
     name: Build & Publish (macOS)
