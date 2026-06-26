@@ -1,6 +1,6 @@
 {
   "name": "sadok",
-  "version": "1.0.62",
+  "version": "1.0.63",
   "description": "Система управління дитячим садком",
   "main": "main.js",
   "scripts": {

@@ -96,13 +96,22 @@ const Sidebar: React.FC = () => {
         </NavLink>
       </nav>
 
-      <button
-        onClick={logout}
-        className="mt-4 flex items-center gap-3 rounded-lg p-3 text-red-500 transition hover:bg-red-50"
-      >
-        <LogOut size={20} className="shrink-0" />
-        <span className="truncate">{t('logout')}</span>
-      </button>
+      <div className="mt-4 border-t pt-4 flex flex-col gap-2">
+        <div className="flex items-center justify-between px-3 text-xs text-gray-400">
+          <span>Версія</span>
+          <span className="font-medium bg-warm-50 px-2 py-0.5 rounded-full text-warm-600 border border-warm-100">
+            v{settings?.appVersion || '1.0.62'}
+          </span>
+        </div>
+
+        <button
+          onClick={logout}
+          className="flex items-center gap-3 rounded-lg p-3 text-red-500 transition hover:bg-red-50"
+        >
+          <LogOut size={20} className="shrink-0" />
+          <span className="truncate">{t('logout')}</span>
+        </button>
+      </div>
     </aside>
   );
 };
