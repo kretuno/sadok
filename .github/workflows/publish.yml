@@ -23,7 +23,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm run install:all
+        run: |
+          npm ci
+          npm ci --prefix apps/client
+          npm ci --prefix apps/server
+
+      - name: Run tests
+        run: npm test
 
       - name: Build client and server
         run: npm run build
@@ -50,7 +56,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm run install:all
+        run: |
+          npm ci
+          npm ci --prefix apps/client
+          npm ci --prefix apps/server
+
+      - name: Run tests
+        run: npm test
 
       - name: Build client and server
         run: npm run build

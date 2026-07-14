@@ -26,6 +26,7 @@ const DashboardPage: React.FC = () => {
   const [weeklyMenuChart, setWeeklyMenuChart] = useState<Array<{ label: string; totalCost: number; totalChildren: number; menuExists: boolean; isConfirmed: boolean }>>([]);
   const [weeklyTopProducts, setWeeklyTopProducts] = useState<Array<{ productId: number; productName: string; unit: string; totalCost: number; totalQuantity: number; daysUsed: number }>>([]);
   const [quote, setQuote] = useState('');
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   
   // Alerts state
   const [birthdays, setBirthdays] = useState<Array<{ name: string; age: number; isToday: boolean }>>([]);
@@ -36,6 +37,11 @@ const DashboardPage: React.FC = () => {
     upcomingVaccines: 0,
     expiringMeds: 0
   });
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 60 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Generate random quote
@@ -211,11 +217,11 @@ const DashboardPage: React.FC = () => {
     }
     
     const lastBackup = new Date(settings.lastBackupDate);
-    const diffTime = Date.now() - lastBackup.getTime();
+    const diffTime = currentTime - lastBackup.getTime();
     const diffDays = diffTime / (1000 * 60 * 60 * 24);
     
     return diffDays > 2;
-  }, [settings]);
+  }, [settings, currentTime]);
 
   const formatMoney = (value: number) =>
     new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH' }).format(value);
