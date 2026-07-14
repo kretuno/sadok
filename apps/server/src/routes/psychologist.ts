@@ -7,8 +7,11 @@ import {
   children,
 } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 // Отримання всіх дітей із короткими даними психологічної картки
 router.get('/cards', async (req, res) => {

@@ -42,7 +42,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
 
           setIsConnected(true);
-          newSocket.emit('join', user.id);
         });
 
         newSocket.on('disconnect', () => {

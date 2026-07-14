@@ -1,17 +1,37 @@
 import { Server } from 'socket.io';
 import { db } from './db';
 import { messages, users } from './db/schema';
-import { eq, or, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { type AuthenticatedUser, verifyAuthToken } from './middleware/auth';
+
+interface SendMessagePayload {
+  recipientId?: number;
+  groupId?: string;
+  content: string;
+}
 
 export function setupSocket(io: Server) {
-  io.on('connection', (socket) => {
-    console.log('Користувач підключився:', socket.id);
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
 
-    // Приєднання до кімнати користувача для особистих повідомлень
-    socket.on('join', (userId: number) => {
-      socket.join(`user_${userId}`);
-      console.log(`Користувач ${userId} приєднався до своєї кімнати`);
-    });
+    if (typeof token !== 'string' || !token) {
+      return next(new Error('Authentication required'));
+    }
+
+    try {
+      socket.data.user = verifyAuthToken(token);
+      next();
+    } catch {
+      next(new Error('Invalid authentication token'));
+    }
+  });
+
+  io.on('connection', (socket) => {
+    const user = socket.data.user as AuthenticatedUser;
+    const userRoom = `user_${user.id}`;
+
+    socket.join(userRoom);
+    console.log(`Користувач ${user.username} підключився:`, socket.id);
 
     // Приєднання до групових кімнат
     socket.on('join_group', (groupId: string) => {
@@ -20,23 +40,24 @@ export function setupSocket(io: Server) {
     });
 
     // Відправка повідомлення
-    socket.on('send_message', async (data: { 
-      senderId: number, 
-      recipientId?: number, 
-      groupId?: string, 
-      content: string 
-    }) => {
+    socket.on('send_message', async (data: SendMessagePayload) => {
       try {
+        const content = typeof data.content === 'string' ? data.content.trim() : '';
+
+        if (!content) {
+          return;
+        }
+
         const [newMessage] = await db.insert(messages).values({
-          senderId: data.senderId,
+          senderId: user.id,
           recipientId: data.recipientId,
           groupId: data.groupId,
-          content: data.content,
+          content,
         }).returning();
 
         // Отримуємо дані відправника
         const sender = await db.query.users.findFirst({
-          where: eq(users.id, data.senderId),
+          where: eq(users.id, user.id),
           columns: {
             id: true,
             fullName: true,
@@ -54,7 +75,7 @@ export function setupSocket(io: Server) {
           io.to(`group_${data.groupId}`).emit('new_message', messageToSend);
         } else if (data.recipientId) {
           // Особисте повідомлення
-          io.to(`user_${data.recipientId}`).to(`user_${data.senderId}`).emit('new_message', messageToSend);
+          io.to(`user_${data.recipientId}`).to(userRoom).emit('new_message', messageToSend);
         } else {
           // Публічне повідомлення (всім)
           io.emit('new_message', messageToSend);

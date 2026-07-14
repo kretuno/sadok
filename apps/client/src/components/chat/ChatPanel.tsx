@@ -163,7 +163,6 @@ const ChatPanel: React.FC = () => {
     if (!inputValue.trim() || !socket || !user) return;
 
     socket.emit('send_message', {
-      senderId: user.id,
       recipientId: selectedRecipientId || undefined,
       content: inputValue
     });
