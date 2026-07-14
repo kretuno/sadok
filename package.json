@@ -15,6 +15,7 @@
     "build:client": "cd apps/client && npm run build",
     "build:server": "cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js",
     "build": "npm run build:client && npm run build:server",
+    "test": "npm --prefix apps/server test",
     "dist:win": "npm run build && electron-builder --win nsis",
     "dist:win:x64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=x64 && electron-builder --win nsis --x64",
     "dist:win:ia32": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=ia32 && electron-builder --win nsis --ia32",
