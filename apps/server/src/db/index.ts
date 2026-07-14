@@ -4,6 +4,7 @@ import * as schema from './schema';
 import fs from 'fs';
 import path from 'path';
 import { dataDir, ensureDir } from '../paths';
+import { runSchemaMigrations } from './migrations';
 
 ensureDir(dataDir);
 
@@ -49,18 +50,7 @@ if (!hasUsersTable(dbPath)) {
 }
 
 const sqlite = new Database(dbPath);
-
-// Автоматична міграція: додавання колонки status у таблицю employees
-try {
-  const tableInfo = sqlite.prepare("PRAGMA table_info(employees)").all() as Array<{ name: string }>;
-  const columns = tableInfo.map(c => c.name);
-  if (!columns.includes('status')) {
-    sqlite.prepare("ALTER TABLE employees ADD COLUMN status TEXT NOT NULL DEFAULT 'working'").run();
-    console.log('[DB] Added status column to employees table.');
-  }
-} catch (err) {
-  console.error('[DB] Failed to migrate employees table:', err);
-}
+runSchemaMigrations(sqlite);
 
 // Автоматичне виправлення поламаного хешу пароля адміністратора
 try {
