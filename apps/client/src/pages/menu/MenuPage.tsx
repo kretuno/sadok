@@ -28,8 +28,24 @@ import CustomSelect from '../../components/ui/CustomSelect';
 import Modal from '../../components/ui/Modal';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuth } from '../../contexts/AuthContext';
-
-type Phase4Tab = 'recipes' | 'dailyMenu';
+import RecipesTab from './RecipesTab';
+import {
+  SUSPICIOUS_COST_SHARE,
+  emptyMenuItemRow,
+  formatIngredientUnit,
+  type ConfirmAction,
+  type DailyMenuSummary,
+  type MenuAnalysis,
+  type MenuIngredientAdjustmentRow,
+  type MenuItemRow,
+  type MissingStockItem,
+  type Phase4Tab,
+  type ProductOption,
+  type RecipeDetails,
+  type RecipeSummary,
+  type RestockItemForm,
+  type SupplierOption,
+} from './menuTypes';
 
 const mealTypes = [
   { id: 'breakfast', name: 'Сніданок', icon: <Coffee size={16} /> },
@@ -38,225 +54,6 @@ const mealTypes = [
   { id: 'dinner', name: 'Вечеря', icon: <Utensils size={16} /> },
 ];
 
-const formatIngredientUnit = (unit: string) => {
-  if (unit === 'кг') return 'г';
-  if (unit === 'л') return 'мл';
-  return unit;
-};
-
-interface ProductOption {
-  id: number;
-  name: string;
-  unit: string;
-  currentPrice: number;
-}
-
-interface SupplierOption {
-  id: number;
-  name: string;
-}
-
-interface MissingStockItem {
-  productId: number;
-  productName: string;
-  unit: string;
-  requiredQuantity: number;
-  availableQuantity: number;
-  missingQuantity: number;
-}
-
-interface RestockItemForm {
-  productId: string;
-  productName: string;
-  unit: string;
-  quantity: string;
-  unitPrice: string;
-}
-
-interface RecipeSummary {
-  id: number;
-  name: string;
-  dishType?: string | null;
-  outputWeight: number;
-  isBaseRecipe: boolean;
-  ingredientsCount: number;
-  cost: {
-    byAgeGroup: Record<string, number>;
-  };
-}
-
-interface RecipeDetails {
-  recipe: {
-    id: number;
-    name: string;
-    dishType?: string | null;
-    techCard?: string | null;
-    outputWeight: number;
-    isBaseRecipe: boolean;
-  };
-  ingredients: Array<{
-    id: number;
-    productId?: number | null;
-    subRecipeId?: number | null;
-    ageGroup: string;
-    grossWeight: number;
-    netWeight: number;
-  }>;
-  cost: {
-    common: number;
-    byAgeGroup: Record<string, number>;
-    costPer100g: Record<string, number>;
-    lines: any[];
-  };
-}
-
-interface DailyMenuSummary {
-  id: number;
-  date: string;
-  childrenCount0_4: number;
-  childrenCount5_7: number;
-  employeesCount: number;
-  targetPrice0_4?: number | null;
-  targetPrice5_7?: number | null;
-  isConfirmed: boolean;
-  itemsCount: number;
-  hasAdjustments: boolean;
-  status: 'empty' | 'draft' | 'adjusted' | 'confirmed';
-}
-
-interface MenuIngredientAdjustmentRow {
-  recipeIngredientId: number | null;
-  productId?: number | null;
-  subRecipeId?: number | null;
-  sourceType: 'product' | 'recipe';
-  sourceName: string;
-  ageGroup: string;
-  unit: string;
-  defaultWeight: number;
-  weight: string;
-  isAdjusted: boolean;
-}
-
-interface MenuItemRow {
-  id?: number;
-  recipeId: string;
-  mealType: string;
-  outputWeight0_4: string;
-  outputWeight5_7: string;
-  outputWeightEmployees: string;
-  adjustments?: MenuIngredientAdjustmentRow[];
-  adjustmentsExpanded?: boolean;
-}
-
-interface MenuAnalysis {
-  id: number;
-  date: string;
-  childrenCount0_4: number;
-  childrenCount5_7: number;
-  employeesCount: number;
-  targetPrice0_4?: number | null;
-  targetPrice5_7?: number | null;
-  isConfirmed: boolean;
-  status: 'empty' | 'draft' | 'adjusted' | 'confirmed';
-  hasAdjustments: boolean;
-  itemsCount: number;
-  items?: Array<{
-    id: number;
-    mealType: string;
-    mealTypeLabel: string;
-    recipeId: number;
-    recipeName: string;
-    recipeDishType?: string | null;
-    defaultOutputWeight: number;
-    outputWeight0_4?: number | null;
-    outputWeight5_7?: number | null;
-    outputWeightEmployees?: number | null;
-    hasAdjustments: boolean;
-    adjustmentsCount: number;
-    ingredientAdjustments: Array<{
-      recipeIngredientId: number;
-      ageGroup: string;
-      sourceType: 'product' | 'recipe';
-      sourceName: string;
-      unit: string;
-      defaultGrossWeight: number;
-      defaultNetWeight: number;
-      effectiveGrossWeight: number;
-      effectiveNetWeight: number;
-      isAdjusted: boolean;
-    }>;
-    productBreakdown: Array<{
-      productId: number;
-      productName: string;
-      unit: string;
-      grossQuantity0_4: number;
-      grossQuantity5_7: number;
-      grossQuantityEmployees: number;
-      netQuantity0_4: number;
-      netQuantity5_7: number;
-      netQuantityEmployees: number;
-      totalGrossQuantity: number;
-      totalNetQuantity: number;
-      unitPrice: number;
-      cost0_4: number;
-      cost5_7: number;
-      costEmployees: number;
-      totalCost: number;
-    }>;
-    cost0_4: number;
-    cost5_7: number;
-    costEmployees: number;
-  }>;
-  summaryNeeds?: Array<{
-    productId: number;
-    productName: string;
-    unit: string;
-    grossQuantity0_4: number;
-    grossQuantity5_7: number;
-    grossQuantityEmployees: number;
-    netQuantity0_4: number;
-    netQuantity5_7: number;
-    netQuantityEmployees: number;
-    totalGrossQuantity: number;
-    totalNetQuantity: number;
-    unitPrice: number;
-    cost0_4: number;
-    cost5_7: number;
-    costEmployees: number;
-    totalCost: number;
-  }>;
-  totals?: {
-    totalChildren: number;
-    totalEmployees: number;
-    costPerChild0_4: number;
-    costPerChild5_7: number;
-    costPerEmployee: number;
-    totalCost0_4: number;
-    totalCost5_7: number;
-    totalCostEmployees: number;
-    totalCostAll: number;
-  };
-}
-
-const emptyMenuItemRow = (mealType: string): MenuItemRow => ({
-  mealType,
-  recipeId: '',
-  outputWeight0_4: '',
-  outputWeight5_7: '',
-  outputWeightEmployees: '',
-  adjustments: [],
-  adjustmentsExpanded: false,
-});
-
-const SUSPICIOUS_COST_SHARE = 0.4;
-
-type ConfirmAction = {
-  type: 'confirmMenu' | 'cancelConfirmation';
-  title: string;
-  message: string;
-  confirmLabel: string;
-  tone: 'emerald' | 'red';
-};
 
 const MenuPage: React.FC = () => {
   const { settings } = useSettings();
@@ -273,17 +70,6 @@ const MenuPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
-  const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null);
-  const [recipeForm, setRecipeForm] = useState({
-    name: '',
-    dishType: '',
-    outputWeight: '',
-    techCard: '',
-    isBaseRecipe: false,
-  });
-  const [ingredientRows, setIngredientRows] = useState<any[]>([
-    { sourceType: 'product', sourceId: '', ageGroup: 'common', weight: '' },
-  ]);
   const [addingIngredientToRowIdx, setAddingIngredientToRowIdx] = useState<number | null>(null);
   const [newIngredientForm, setNewIngredientForm] = useState<{
     productId: string;
@@ -330,7 +116,6 @@ const MenuPage: React.FC = () => {
   });
   const [restockItems, setRestockItems] = useState<RestockItemForm[]>([]);
   const [manualRestockReason, setManualRestockReason] = useState('');
-  const recipeEditorRef = useRef<HTMLDivElement | null>(null);
   const previewRequestIdRef = useRef(0);
   const printFrameRef = useRef<HTMLIFrameElement | null>(null);
   const printFrameRootRef = useRef<{ unmount: () => void } | null>(null);
@@ -348,18 +133,6 @@ const MenuPage: React.FC = () => {
     void loadWeekMenus();
     void loadCurrentMenu();
   }, [selectedDate, currentWeekStart, activeTab]);
-
-  useEffect(() => {
-    if (selectedRecipeId) {
-      void loadRecipeDetails(selectedRecipeId);
-    }
-  }, [selectedRecipeId]);
-
-  useEffect(() => {
-    if (activeTab === 'recipes' && recipeEditorRef.current) {
-      recipeEditorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [activeTab, selectedRecipeId]);
 
   useEffect(() => {
     if (activeTab !== 'dailyMenu' || menuForm.isConfirmed || !hasUnsavedMenuChanges || menuItemRows.filter((row) => row.recipeId).length === 0) {
@@ -1328,23 +1101,6 @@ const MenuPage: React.FC = () => {
 
     frameWindow.focus();
     frameWindow.print();
-  };
-
-  const loadRecipeDetails = async (id: number) => {
-    const res = await api.get(`/recipes/${id}`);
-    setRecipeForm({
-      name: res.data.recipe.name,
-      dishType: res.data.recipe.dishType || '',
-      outputWeight: String(res.data.recipe.outputWeight || ''),
-      techCard: res.data.recipe.techCard || '',
-      isBaseRecipe: res.data.recipe.isBaseRecipe,
-    });
-    setIngredientRows(res.data.ingredients.map((ingredient: any) => ({
-      sourceType: ingredient.productId ? 'product' : 'recipe',
-      sourceId: String(ingredient.productId || ingredient.subRecipeId),
-      ageGroup: ingredient.ageGroup,
-      weight: String(ingredient.grossWeight),
-    })));
   };
 
   const getDayStatusMeta = (status: DailyMenuSummary['status'] | MenuAnalysis['status']) => {
@@ -2756,144 +2512,15 @@ const MenuPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 2xl:grid-cols-[1fr_450px]">
-          <div className={`rounded-3xl border border-warm-100 bg-white p-5 shadow-sm ${selectedRecipeId ? 'order-2 2xl:order-2' : 'order-2'}`}>
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800">База рецептів</h3>
-              <div className="flex gap-2">
-                {selectedRecipeId && (
-                  <button
-                    onClick={() => {
-                      setSelectedRecipeId(null);
-                      setRecipeForm({
-                        name: '',
-                        dishType: '',
-                        outputWeight: '',
-                        techCard: '',
-                        isBaseRecipe: false,
-                      });
-                      setIngredientRows([{ sourceType: 'product', sourceId: '', ageGroup: 'common', weight: '' }]);
-                    }}
-                    className="ui-button-secondary px-4 py-2 text-sm"
-                  >
-                    <RotateCcw size={16} /> Скасувати редагування
-                  </button>
-                )}
-                <button onClick={() => setSelectedRecipeId(null)} className="ui-button-secondary px-4 py-2 text-sm"><Plus size={16} /> Новий рецепт</button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {recipes.map((recipe) => (
-                <button
-                  key={recipe.id}
-                  onClick={() => setSelectedRecipeId(recipe.id)}
-                  className={`w-full rounded-2xl border p-4 text-left transition-all ${selectedRecipeId === recipe.id ? 'border-warm-500 bg-warm-50' : 'border-warm-100 hover:bg-warm-50/50'}`}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <div className="font-bold text-gray-800">{recipe.name}</div>
-                      <div className="mt-0.5 text-xs font-black uppercase tracking-tighter text-gray-400">
-                        {recipe.dishType || 'Страва'} • {recipe.ingredientsCount} інгр.
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-black text-warm-500">{formatMoney(recipe.cost.byAgeGroup['5-7'])}</div>
-                      <div className="text-[10px] font-bold uppercase text-gray-400">на дитину</div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div ref={recipeEditorRef} className={`h-fit rounded-3xl border border-warm-100 bg-white p-6 shadow-sm ${selectedRecipeId ? 'order-1 2xl:col-span-2' : 'sticky top-6'}`}>
-            <h3 className="mb-6 text-xl font-bold text-gray-800">{selectedRecipeId ? 'Редагування рецепта' : 'Створення рецепта'}</h3>
-            <form className="space-y-4">
-              <input value={recipeForm.name} onChange={(event) => setRecipeForm({ ...recipeForm, name: event.target.value })} placeholder="Назва рецепта" className="ui-input font-bold" />
-              <div className="grid grid-cols-2 gap-3">
-                <input value={recipeForm.dishType} onChange={(event) => setRecipeForm({ ...recipeForm, dishType: event.target.value })} placeholder="Тип страви" className="ui-input text-sm" />
-                <input value={recipeForm.outputWeight} onChange={(event) => setRecipeForm({ ...recipeForm, outputWeight: event.target.value })} placeholder="Вихід, г" className="ui-input text-sm" />
-              </div>
-
-              <div className="border-t border-warm-100 pt-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Інгредієнти</h4>
-                  <button type="button" onClick={() => setIngredientRows([...ingredientRows, { sourceType: 'product', sourceId: '', ageGroup: 'common', weight: '' }])} className="text-warm-500 hover:text-warm-600"><Plus size={18} /></button>
-                </div>
-                <div className="max-h-60 space-y-3 overflow-y-auto pr-2">
-                  {ingredientRows.map((ingredient, idx) => (
-                    <div key={idx} className="space-y-2 rounded-xl border border-warm-100 bg-warm-50/50 p-3">
-                      <CustomSelect
-                        options={ingredient.sourceType === 'product' ? products : recipes.filter((recipe) => recipe.id !== selectedRecipeId)}
-                        value={ingredient.sourceId}
-                        onChange={(value) => {
-                          const next = [...ingredientRows];
-                          next[idx].sourceId = String(value);
-                          setIngredientRows(next);
-                        }}
-                      />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="Кількість / вага" value={ingredient.weight} onChange={(event) => { const next = [...ingredientRows]; next[idx].weight = event.target.value; setIngredientRows(next); }} className="ui-input text-xs" />
-                        <CustomSelect
-                          options={[
-                            { id: 'common', name: 'Загальна' },
-                            { id: '0-4', name: '0-4' },
-                            { id: '5-7', name: '5-7' },
-                          ]}
-                          value={ingredient.ageGroup}
-                          onChange={(value) => {
-                            const next = [...ingredientRows];
-                            next[idx].ageGroup = String(value);
-                            setIngredientRows(next);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={async () => {
-                  setSaving(true);
-                  try {
-                    const payload = {
-                      name: recipeForm.name,
-                      dishType: recipeForm.dishType,
-                      outputWeight: Number(recipeForm.outputWeight),
-                      techCard: recipeForm.techCard,
-                      isBaseRecipe: recipeForm.isBaseRecipe,
-                      ingredients: ingredientRows.map((row) => ({
-                        productId: row.sourceType === 'product' ? Number(row.sourceId) : undefined,
-                        subRecipeId: row.sourceType === 'recipe' ? Number(row.sourceId) : undefined,
-                        ageGroup: row.ageGroup,
-                        grossWeight: Number(row.weight),
-                        netWeight: Number(row.weight),
-                      })),
-                    };
-
-                    if (selectedRecipeId) {
-                      await api.put(`/recipes/${selectedRecipeId}`, payload);
-                    } else {
-                      await api.post('/recipes', payload);
-                    }
-
-                    setSuccess('Рецепт збережено');
-                    void loadBootstrapData();
-                  } catch {
-                    setError('Помилка збереження рецепта');
-                  } finally {
-                    setSaving(false);
-                  }
-                }}
-                className="ui-button-primary mt-4 w-full py-3"
-              >
-                {selectedRecipeId ? 'Оновити рецепт' : 'Зберегти рецепт'}
-              </button>
-            </form>
-          </div>
-        </div>
+        <RecipesTab
+          recipes={recipes}
+          products={products}
+          onSaved={async () => {
+            setSuccess('Рецепт збережено');
+            await loadBootstrapData();
+          }}
+          onError={setError}
+        />
       )}
 
       <Modal
