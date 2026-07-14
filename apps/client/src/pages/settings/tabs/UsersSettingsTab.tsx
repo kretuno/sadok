@@ -119,9 +119,11 @@ const UsersSettingsTab: React.FC = () => {
     e.preventDefault();
     setNotice(null);
     try {
+      const { password, ...userFields } = formData;
       const payload = {
-        ...formData,
+        ...userFields,
         permissions,
+        ...(!editingId || password ? { password } : {}),
       };
 
       if (editingId) {
@@ -297,6 +299,7 @@ const UsersSettingsTab: React.FC = () => {
                           <label key={action} className="flex h-11 items-center justify-center" title={`${module.label}: ${actionLabels[action]}`}>
                             <input
                               type="checkbox"
+                              aria-label={`${module.label}: ${actionLabels[action]}`}
                               checked={permissions.modules[module.id][action]}
                               onChange={() => togglePermission(module.id, action)}
                               className="h-5 w-5 rounded border-gray-300 text-warm-500 focus:ring-warm-500"

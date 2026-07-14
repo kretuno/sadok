@@ -32,6 +32,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
 export const createUser = async (req: AuthRequest, res: Response) => {
   try {
     const { fullName, username, password, role, permissions } = req.body;
+    const normalizedPermissions = normalizePermissionMatrix(permissions);
 
     const allUsers = await db.select().from(users);
     if (allUsers.length >= 10) {
@@ -56,7 +57,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
         username,
         passwordHash,
         role,
-        permissions: JSON.stringify(normalizePermissionMatrix(permissions)),
+        permissions: JSON.stringify(normalizedPermissions),
       })
       .returning({
         id: users.id,
@@ -72,7 +73,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       entityId: inserted[0].id,
       newValue: {
         ...inserted[0],
-        permissions,
+        permissions: normalizedPermissions,
       },
       ipAddress: getClientIp(req),
     });
@@ -88,6 +89,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { fullName, password, role, permissions, isActive } = req.body;
     const userId = Number(id);
+    const normalizedPermissions = normalizePermissionMatrix(permissions);
 
     const existingUser = await db.query.users.findFirst({
       where: eq(users.id, userId),
@@ -114,7 +116,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     } = {
       fullName,
       role,
-        permissions: JSON.stringify(normalizePermissionMatrix(permissions)),
+      permissions: JSON.stringify(normalizedPermissions),
       isActive,
     };
 
@@ -130,12 +132,15 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
       actionType: 'update',
       entity: 'users',
       entityId: userId,
-      oldValue: existingUser,
+      oldValue: {
+        ...existingUser,
+        permissions: normalizePermissionMatrix(existingUser.permissions),
+      },
       newValue: {
         id: userId,
         fullName,
         role,
-        permissions,
+        permissions: normalizedPermissions,
         isActive,
         passwordChanged: Boolean(password),
       },

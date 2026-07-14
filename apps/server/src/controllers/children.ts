@@ -4,6 +4,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { logAuditEvent, getClientIp } from '../services/audit';
 import { uploadPath } from '../paths';
+import { detectImageFileExtension } from '../services/imageValidation';
 import {
   createChild,
   createGroup,
@@ -191,14 +192,9 @@ export const uploadChildPhotoHandler = async (req: AuthRequest, res: Response) =
     const uploadsDir = uploadPath('children', String(childId));
     fs.mkdirSync(uploadsDir, { recursive: true });
 
-    const extensionByMimeType: Record<string, string> = {
-      'image/jpeg': '.jpg',
-      'image/png': '.png',
-      'image/webp': '.webp',
-    };
-    const extension = extensionByMimeType[file.mimetype];
+    const extension = detectImageFileExtension(file.path);
     if (!extension) {
-      throw new Error('Дозволено лише фото JPEG, PNG або WebP');
+      throw new Error('Файл не містить коректне фото JPEG, PNG або WebP');
     }
     const fileName = `profile-${Date.now()}${extension.toLowerCase()}`;
     const destination = path.join(uploadsDir, fileName);

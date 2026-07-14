@@ -72,6 +72,42 @@ test('migration history mismatch stops startup', () => {
     INSERT INTO sadok_schema_migrations VALUES (1, 'unexpected_name', 0);
   `);
 
-  assert.throws(() => runSchemaMigrations(database), /expected employees_status/);
+  assert.throws(() => runSchemaMigrations(database), /expected 1:employees_status/);
+  database.close();
+});
+
+test('unknown applied migration versions stop startup', () => {
+  const database = new Database(':memory:');
+  database.exec(`
+    CREATE TABLE employees (id INTEGER PRIMARY KEY);
+    CREATE TABLE sadok_schema_migrations (
+      version INTEGER PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      applied_at INTEGER NOT NULL
+    );
+    INSERT INTO sadok_schema_migrations VALUES (1, 'employees_status', 0);
+    INSERT INTO sadok_schema_migrations VALUES (2, 'unknown_future_migration', 0);
+  `);
+
+  assert.throws(() => runSchemaMigrations(database), /expected no additional migration/);
+  database.close();
+});
+
+test('gaps in applied migration history stop startup', () => {
+  const database = new Database(':memory:');
+  const migrations: SchemaMigration[] = [
+    { version: 1, name: 'one', up() {} },
+    { version: 2, name: 'two', up() {} },
+  ];
+  database.exec(`
+    CREATE TABLE sadok_schema_migrations (
+      version INTEGER PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      applied_at INTEGER NOT NULL
+    );
+    INSERT INTO sadok_schema_migrations VALUES (2, 'two', 0);
+  `);
+
+  assert.throws(() => runSchemaMigrations(database, migrations), /expected 1:one/);
   database.close();
 });

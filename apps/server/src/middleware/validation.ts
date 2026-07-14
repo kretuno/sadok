@@ -59,7 +59,7 @@ const validateUserFields = (
   if (passwordRequired && (typeof password !== 'string' || password.length < 8 || password.length > 128)) {
     return sendValidationError(res, 'Пароль має містити від 8 до 128 символів');
   }
-  if (!passwordRequired && password && (typeof password !== 'string' || password.length < 8 || password.length > 128)) {
+  if (!passwordRequired && password !== undefined && (typeof password !== 'string' || password.length < 8 || password.length > 128)) {
     return sendValidationError(res, 'Новий пароль має містити від 8 до 128 символів');
   }
   if (!role || !ALLOWED_ROLES.has(role)) {

@@ -48,10 +48,7 @@ router.get('/', authorizePermission('children', 'view'), getChildrenHandler);
 router.post('/', authorizePermission('children', 'edit'), createChildHandler);
 router.patch(
   '/:id/archive',
-  authorizeAnyPermission(
-    { module: 'children', action: 'delete' },
-    { module: 'medical', action: 'delete' }
-  ),
+  authorizePermission('children', 'delete'),
   archiveChildHandler
 );
 router.post('/:id/regenerate-qr', authorizePermission('children', 'edit'), regenerateQRTokenHandler);
@@ -66,10 +63,7 @@ router.post(
 );
 router.patch(
   '/:id',
-  authorizeAnyPermission(
-    { module: 'children', action: 'edit' },
-    { module: 'medical', action: 'edit' }
-  ),
+  authorizePermission('children', 'edit'),
   updateChildHandler
 );
 

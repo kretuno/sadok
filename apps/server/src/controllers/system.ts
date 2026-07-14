@@ -10,6 +10,7 @@ import os from 'os';
 import zlib from 'zlib';
 import { getClientIp, logAuditEvent } from '../services/audit';
 import { dataDir } from '../paths';
+import { assertValidSadokDatabase } from '../services/backupValidation';
 
 const LICENSE_SALT = process.env.LICENSE_SALT || 'SADOK-MACHINE-SALT-2026';
 const ACTIVATION_SECRET = process.env.ACTIVATION_SECRET || 'SADOK-LICENSE-SECRET-V1';
@@ -115,15 +116,8 @@ const listBackups = () => {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
-const assertValidSqliteBuffer = (buffer: Buffer) => {
-  const sqliteHeader = Buffer.from('SQLite format 3\0');
-  if (buffer.length < sqliteHeader.length || !buffer.subarray(0, sqliteHeader.length).equals(sqliteHeader)) {
-    throw new Error('Файл не є коректною базою SQLite');
-  }
-};
-
 const restoreDbFromBuffer = (buffer: Buffer) => {
-  assertValidSqliteBuffer(buffer);
+  assertValidSadokDatabase(buffer);
   const dbPath = getDbPath();
   fs.writeFileSync(dbPath, buffer);
   return dbPath;
@@ -385,7 +379,7 @@ export const restoreBackup = async (req: Request, res: Response) => {
     const restoredBuffer = isCompressed
       ? zlib.gunzipSync(uploadedBuffer, { maxOutputLength: 500 * 1024 * 1024 })
       : uploadedBuffer;
-    assertValidSqliteBuffer(restoredBuffer);
+    assertValidSadokDatabase(restoredBuffer);
     const safetyBackup = await createCompressedBackup('before_upload_restore');
     const dbPath = restoreDbFromBuffer(restoredBuffer);
 

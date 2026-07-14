@@ -40,7 +40,7 @@ const assertMigrationSequence = (migrations: readonly SchemaMigration[]) => {
   const names = new Set<string>();
 
   for (const migration of migrations) {
-    if (!Number.isSafeInteger(migration.version) || migration.version <= previousVersion) {
+    if (!Number.isSafeInteger(migration.version) || migration.version !== previousVersion + 1) {
       throw new Error(`Invalid migration order at version ${migration.version}`);
     }
     if (!migration.name || names.has(migration.name)) {
@@ -67,6 +67,25 @@ export const runSchemaMigrations = (
   const appliedRows = database.prepare(
     `SELECT version, name FROM ${MIGRATIONS_TABLE} ORDER BY version`
   ).all() as Array<{ version: number; name: string }>;
+
+  for (let index = 0; index < appliedRows.length; index += 1) {
+    const appliedMigration = appliedRows[index];
+    const expectedMigration = migrations[index];
+
+    if (
+      !expectedMigration ||
+      appliedMigration.version !== expectedMigration.version ||
+      appliedMigration.name !== expectedMigration.name
+    ) {
+      const expected = expectedMigration
+        ? `${expectedMigration.version}:${expectedMigration.name}`
+        : 'no additional migration';
+      throw new Error(
+        `Migration history diverged at ${appliedMigration.version}:${appliedMigration.name}; expected ${expected}`
+      );
+    }
+  }
+
   const applied = new Map(appliedRows.map((row) => [row.version, row.name]));
 
   for (const migration of migrations) {

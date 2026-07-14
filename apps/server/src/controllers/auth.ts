@@ -6,8 +6,7 @@ import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { getClientIp, logAuditEvent } from '../services/audit';
 import { normalizePermissionMatrix } from '../services/permissions';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'sadok-default-local-jwt-secret-key-2026';
+import { JWT_SECRET } from '../config/security';
 
 export const register = async (req: Request, res: Response) => {
   try {

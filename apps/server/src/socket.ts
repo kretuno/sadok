@@ -1,14 +1,35 @@
 import { Server } from 'socket.io';
 import { db } from './db';
-import { messages, users } from './db/schema';
+import { childGroups, messages, users } from './db/schema';
 import { eq } from 'drizzle-orm';
 import { type AuthenticatedUser, verifyAuthToken } from './middleware/auth';
+import { hasPermission } from './services/permissions';
 
 interface SendMessagePayload {
   recipientId?: number;
   groupId?: string;
   content: string;
 }
+
+const canUseGroupChat = (user: AuthenticatedUser) =>
+  hasPermission(user.role, user.permissions, 'children', 'view') ||
+  hasPermission(user.role, user.permissions, 'attendance', 'view') ||
+  hasPermission(user.role, user.permissions, 'medical', 'view') ||
+  hasPermission(user.role, user.permissions, 'psychologist', 'view');
+
+const getAuthorizedGroupId = async (user: AuthenticatedUser, rawGroupId: unknown) => {
+  if (!canUseGroupChat(user)) return null;
+
+  const groupId = Number(rawGroupId);
+  if (!Number.isSafeInteger(groupId) || groupId <= 0) return null;
+
+  const group = await db.query.childGroups.findFirst({
+    where: eq(childGroups.id, groupId),
+    columns: { id: true },
+  });
+
+  return group ? String(group.id) : null;
+};
 
 export function setupSocket(io: Server) {
   io.use(async (socket, next) => {
@@ -52,24 +73,32 @@ export function setupSocket(io: Server) {
     console.log(`Користувач ${user.username} підключився:`, socket.id);
 
     // Приєднання до групових кімнат
-    socket.on('join_group', (groupId: string) => {
-      socket.join(`group_${groupId}`);
+    socket.on('join_group', async (rawGroupId: unknown) => {
+      const groupId = await getAuthorizedGroupId(user, rawGroupId);
+      if (!groupId) return;
+
+      await socket.join(`group_${groupId}`);
       console.log(`Користувач приєднався до групи: ${groupId}`);
     });
 
     // Відправка повідомлення
     socket.on('send_message', async (data: SendMessagePayload) => {
       try {
-        const content = typeof data.content === 'string' ? data.content.trim() : '';
+        const content = typeof data?.content === 'string' ? data.content.trim() : '';
 
         if (!content) {
           return;
         }
 
+        const groupId = data.groupId
+          ? await getAuthorizedGroupId(user, data.groupId)
+          : undefined;
+        if (data.groupId && !groupId) return;
+
         const [newMessage] = await db.insert(messages).values({
           senderId: user.id,
           recipientId: data.recipientId,
-          groupId: data.groupId,
+          groupId,
           content,
         }).returning();
 
@@ -88,9 +117,9 @@ export function setupSocket(io: Server) {
           sender
         };
 
-        if (data.groupId) {
+        if (groupId) {
           // Відправка в групу
-          io.to(`group_${data.groupId}`).emit('new_message', messageToSend);
+          io.to(`group_${groupId}`).emit('new_message', messageToSend);
         } else if (data.recipientId) {
           // Особисте повідомлення
           io.to(`user_${data.recipientId}`).to(userRoom).emit('new_message', messageToSend);

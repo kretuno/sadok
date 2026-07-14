@@ -55,10 +55,10 @@ function readDesktopConfig() {
     ? defaultServerUrl
     : normalizeServerUrl(parsed.serverUrl || '');
 
-  let jwtSecret = parsed.jwtSecret;
-  let needsWrite = !fileExists || !jwtSecret;
+  let jwtSecret = typeof parsed.jwtSecret === 'string' ? parsed.jwtSecret : '';
+  let needsWrite = !fileExists || Buffer.byteLength(jwtSecret, 'utf8') < 32;
 
-  if (!jwtSecret) {
+  if (Buffer.byteLength(jwtSecret, 'utf8') < 32) {
     jwtSecret = crypto.randomBytes(32).toString('hex');
   }
 
@@ -67,7 +67,8 @@ function readDesktopConfig() {
   if (needsWrite) {
     try {
       fs.mkdirSync(path.dirname(configPath), { recursive: true });
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), { encoding: 'utf8', mode: 0o600 });
+      fs.chmodSync(configPath, 0o600);
     } catch (error) {
       console.error('[Electron] Failed to write desktop config during initialization:', error);
     }
@@ -87,7 +88,8 @@ function writeDesktopConfig(nextConfig) {
 
   try {
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), { encoding: 'utf8', mode: 0o600 });
+    fs.chmodSync(configPath, 0o600);
   } catch (error) {
     console.error('[Electron] Failed to write desktop config:', error);
   }
@@ -218,7 +220,9 @@ function getServerEntryPath() {
 }
 
 function registerIpcHandlers() {
-  ipcMain.handle('sadok:get-config', () => readDesktopConfig());
+  const toPublicConfig = ({ role, serverUrl }) => ({ role, serverUrl });
+
+  ipcMain.handle('sadok:get-config', () => toPublicConfig(readDesktopConfig()));
   ipcMain.handle('sadok:set-config', (_event, config) => {
     const nextConfig = writeDesktopConfig(config || {});
     
@@ -244,7 +248,7 @@ function registerIpcHandlers() {
       }
     }
     
-    return nextConfig;
+    return toPublicConfig(nextConfig);
   });
   ipcMain.handle('sadok:discover-servers', () => discoverServers());
 
@@ -290,7 +294,7 @@ function startServer() {
   console.log('[Electron] Starting production server...');
   const serverPath = getServerEntryPath();
   const serverCwd = process.resourcesPath || __dirname;
-  const jwtSecret = config.jwtSecret || process.env.JWT_SECRET || 'sadok-default-local-jwt-secret-key-2026';
+  const jwtSecret = config.jwtSecret;
   
   serverProcess = spawn(process.execPath, ['--max-old-space-size=128', serverPath], {
     cwd: serverCwd,

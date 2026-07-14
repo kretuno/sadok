@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw, Trash2 } from 'lucide-react';
 import api from '../../api/axios';
 import CustomSelect from '../../components/ui/CustomSelect';
 import type { ProductOption, RecipeDetails, RecipeSummary } from './menuTypes';
@@ -38,6 +38,7 @@ const formatMoney = (value: number) =>
 
 const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onError }) => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null);
+  const [loadedRecipeId, setLoadedRecipeId] = useState<number | null>(null);
   const [recipeForm, setRecipeForm] = useState(emptyRecipeForm);
   const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([emptyIngredient()]);
   const [saving, setSaving] = useState(false);
@@ -45,11 +46,13 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
 
   const resetEditor = () => {
     setSelectedRecipeId(null);
+    setLoadedRecipeId(null);
     setRecipeForm(emptyRecipeForm());
     setIngredientRows([emptyIngredient()]);
   };
 
   useEffect(() => {
+    setLoadedRecipeId(null);
     if (!selectedRecipeId) return;
     let active = true;
 
@@ -69,6 +72,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
         ageGroup: ingredient.ageGroup,
         weight: String(ingredient.grossWeight),
       })));
+      setLoadedRecipeId(selectedRecipeId);
       editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(() => {
       if (active) onError('Не вдалося завантажити рецепт');
@@ -80,6 +84,11 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
   }, [selectedRecipeId, onError]);
 
   const saveRecipe = async () => {
+    if (selectedRecipeId && loadedRecipeId !== selectedRecipeId) {
+      onError('Зачекайте, поки рецепт завантажиться');
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -99,9 +108,16 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
       } else {
         await api.post('/recipes', payload);
       }
-      await onSaved();
     } catch {
       onError('Помилка збереження рецепта');
+      setSaving(false);
+      return;
+    }
+
+    try {
+      await onSaved();
+    } catch {
+      onError('Рецепт збережено, але список не вдалося оновити');
     } finally {
       setSaving(false);
     }
@@ -166,6 +182,29 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
             <div className="max-h-60 space-y-3 overflow-y-auto pr-2">
               {ingredientRows.map((ingredient, index) => (
                 <div key={index} className="space-y-2 rounded-xl border border-warm-100 bg-warm-50/50 p-3">
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <CustomSelect
+                      options={[
+                        { id: 'product', name: 'Продукт' },
+                        { id: 'recipe', name: 'Напівфабрикат' },
+                      ]}
+                      value={ingredient.sourceType}
+                      onChange={(value) => setIngredientRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? {
+                        ...row,
+                        sourceType: String(value) as IngredientRow['sourceType'],
+                        sourceId: '',
+                      } : row))}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIngredientRows((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}
+                      className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      title="Видалити інгредієнт"
+                      aria-label="Видалити інгредієнт"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                   <CustomSelect
                     options={ingredient.sourceType === 'product' ? products : recipes.filter((recipe) => recipe.id !== selectedRecipeId)}
                     value={ingredient.sourceId}
@@ -193,8 +232,8 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
             </div>
           </div>
 
-          <button type="button" onClick={() => void saveRecipe()} disabled={saving} className="ui-button-primary mt-4 w-full py-3">
-            {saving ? 'Збереження...' : selectedRecipeId ? 'Оновити рецепт' : 'Зберегти рецепт'}
+          <button type="button" onClick={() => void saveRecipe()} disabled={saving || Boolean(selectedRecipeId && loadedRecipeId !== selectedRecipeId)} className="ui-button-primary mt-4 w-full py-3">
+            {saving ? 'Збереження...' : selectedRecipeId && loadedRecipeId !== selectedRecipeId ? 'Завантаження...' : selectedRecipeId ? 'Оновити рецепт' : 'Зберегти рецепт'}
           </button>
         </form>
       </div>

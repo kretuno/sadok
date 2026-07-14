@@ -82,6 +82,26 @@ test('updating a user requires a boolean active status', () => {
   assert.equal(result.statusCode, 400);
 });
 
+test('updating a user rejects non-string and empty password values', () => {
+  const baseBody = {
+    fullName: 'Test User',
+    role: 'user',
+    permissions: { version: 2, modules: {} },
+    isActive: true,
+  };
+
+  for (const password of [null, false, 0, '']) {
+    const result = runMiddleware(validateUpdateUserInput, {
+      body: { ...baseBody, password },
+    });
+    assert.equal(result.nextCalled, false);
+    assert.equal(result.statusCode, 400);
+  }
+
+  const omitted = runMiddleware(validateUpdateUserInput, { body: baseBody });
+  assert.equal(omitted.nextCalled, true);
+});
+
 test('numeric id validation accepts only positive safe integers', () => {
   const valid = runMiddleware(validateNumericId, { params: { id: '42' } });
   const invalid = runMiddleware(validateNumericId, { params: { id: '../1' } });
