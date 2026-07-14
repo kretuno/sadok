@@ -17,7 +17,10 @@ test('schema migrations apply once and record their version', () => {
   const migrationRows = database.prepare('SELECT version, name FROM sadok_schema_migrations').all();
 
   assert.ok(columns.some((column) => column.name === 'status'));
-  assert.deepEqual(migrationRows, [{ version: 1, name: 'employees_status' }]);
+  assert.deepEqual(migrationRows, [
+    { version: 1, name: 'employees_status' },
+    { version: 2, name: 'notification_center' },
+  ]);
   database.close();
 });
 
@@ -30,7 +33,7 @@ test('schema migrations accept databases already containing the target column', 
   const count = database.prepare('SELECT COUNT(*) AS count FROM sadok_schema_migrations').get() as {
     count: number;
   };
-  assert.equal(count.count, 1);
+  assert.equal(count.count, 2);
   database.close();
 });
 
@@ -86,7 +89,8 @@ test('unknown applied migration versions stop startup', () => {
       applied_at INTEGER NOT NULL
     );
     INSERT INTO sadok_schema_migrations VALUES (1, 'employees_status', 0);
-    INSERT INTO sadok_schema_migrations VALUES (2, 'unknown_future_migration', 0);
+    INSERT INTO sadok_schema_migrations VALUES (2, 'notification_center', 0);
+    INSERT INTO sadok_schema_migrations VALUES (3, 'unknown_future_migration', 0);
   `);
 
   assert.throws(() => runSchemaMigrations(database), /expected no additional migration/);

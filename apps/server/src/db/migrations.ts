@@ -33,6 +33,41 @@ export const schemaMigrations: readonly SchemaMigration[] = [
       }
     },
   },
+  {
+    version: 2,
+    name: 'notification_center',
+    up(database) {
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS system_notifications (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          fingerprint TEXT NOT NULL UNIQUE,
+          type TEXT NOT NULL,
+          module TEXT,
+          severity TEXT NOT NULL,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          action_path TEXT NOT NULL,
+          entity_type TEXT,
+          entity_id INTEGER,
+          first_seen_at INTEGER NOT NULL,
+          last_seen_at INTEGER NOT NULL,
+          resolved_at INTEGER
+        );
+        CREATE TABLE IF NOT EXISTS notification_user_states (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          notification_id INTEGER NOT NULL REFERENCES system_notifications(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          read_at INTEGER,
+          snoozed_until INTEGER,
+          dismissed_at INTEGER
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS notification_user_state_unique
+          ON notification_user_states(notification_id, user_id);
+        CREATE INDEX IF NOT EXISTS system_notifications_active_idx
+          ON system_notifications(resolved_at, severity, last_seen_at);
+      `);
+    },
+  },
 ];
 
 const assertMigrationSequence = (migrations: readonly SchemaMigration[]) => {

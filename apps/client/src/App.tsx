@@ -8,6 +8,7 @@ import LoginPage from './pages/auth/LoginPage';
 import Layout from './components/layout/Layout';
 import { UpdateNotification } from './components/layout/UpdateNotification';
 import type { PermissionModule } from './security/permissions';
+import { NotificationsProvider } from './contexts/NotificationsContext';
 
 
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
@@ -23,6 +24,7 @@ const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const PsychologistPage = lazy(() => import('./pages/psychologist/PsychologistPage'));
 const UtilitiesPage = lazy(() => import('./pages/utilities/UtilitiesPage'));
+const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
 const ChatPanel = lazy(() => import('./components/chat/ChatPanel'));
 
 const PageFallback: React.FC = () => (
@@ -48,7 +50,7 @@ const MainContent: React.FC = () => {
 
   if (settings?.isExpired) {
     return (
-      <Layout>
+      <Layout showNotifications={false}>
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/settings" element={<SettingsPage />} />
@@ -61,27 +63,30 @@ const MainContent: React.FC = () => {
   }
 
   return (
-    <Layout>
-      <Suspense fallback={<PageFallback />}>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/inventory" element={<PermissionRoute module="inventory"><InventoryPage /></PermissionRoute>} />
-          <Route path="/menu" element={<PermissionRoute module="menu"><MenuPage /></PermissionRoute>} />
-          <Route path="/children" element={<PermissionRoute module="children"><ChildrenPage /></PermissionRoute>} />
-          <Route path="/employees" element={<PermissionRoute module="employees"><EmployeesPage /></PermissionRoute>} />
-          <Route path="/property" element={<PermissionRoute module="property"><PropertyPage /></PermissionRoute>} />
-          <Route path="/medical" element={<PermissionRoute module="medical"><MedicalPage /></PermissionRoute>} />
-          <Route path="/reports" element={<PermissionRoute module="reports"><ReportsPage /></PermissionRoute>} />
-          <Route path="/attendance" element={<PermissionRoute module="attendance"><AttendancePage /></PermissionRoute>} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/psychologist" element={<PermissionRoute module="psychologist"><PsychologistPage /></PermissionRoute>} />
-          <Route path="/utilities" element={<PermissionRoute module="utilities"><UtilitiesPage /></PermissionRoute>} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-        <ChatPanel />
-      </Suspense>
-    </Layout>
+    <NotificationsProvider>
+      <Layout>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/inventory" element={<PermissionRoute module="inventory"><InventoryPage /></PermissionRoute>} />
+            <Route path="/menu" element={<PermissionRoute module="menu"><MenuPage /></PermissionRoute>} />
+            <Route path="/children" element={<PermissionRoute module="children"><ChildrenPage /></PermissionRoute>} />
+            <Route path="/employees" element={<PermissionRoute module="employees"><EmployeesPage /></PermissionRoute>} />
+            <Route path="/property" element={<PermissionRoute module="property"><PropertyPage /></PermissionRoute>} />
+            <Route path="/medical" element={<PermissionRoute module="medical"><MedicalPage /></PermissionRoute>} />
+            <Route path="/reports" element={<PermissionRoute module="reports"><ReportsPage /></PermissionRoute>} />
+            <Route path="/attendance" element={<PermissionRoute module="attendance"><AttendancePage /></PermissionRoute>} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/psychologist" element={<PermissionRoute module="psychologist"><PsychologistPage /></PermissionRoute>} />
+            <Route path="/utilities" element={<PermissionRoute module="utilities"><UtilitiesPage /></PermissionRoute>} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+          <ChatPanel />
+        </Suspense>
+      </Layout>
+    </NotificationsProvider>
   );
 };
 

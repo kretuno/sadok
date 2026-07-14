@@ -14,6 +14,7 @@ import {
   Users,
   Brain,
   CalendarCheck,
+  Bell,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +40,7 @@ const Sidebar: React.FC = () => {
     { name: t('psychologist'), icon: <Brain size={20} />, path: '/psychologist', module: 'psychologist' },
     { name: t('utilities'), icon: <Gauge size={20} />, path: '/utilities', module: 'utilities' },
     { name: t('reports'), icon: <FileText size={20} />, path: '/reports', module: 'reports' },
+    { name: 'Сповіщення', icon: <Bell size={20} />, path: '/notifications' },
     { name: t('settings'), icon: <Settings size={20} />, path: '/settings' },
   ];
   const menuItems = allMenuItems.filter((item) => !item.module || can(item.module, 'view'));

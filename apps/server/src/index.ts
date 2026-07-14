@@ -22,6 +22,7 @@ import systemRoutes from './routes/system';
 import usersRoutes from './routes/users';
 import psychologistRoutes from './routes/psychologist';
 import utilitiesRoutes from './routes/utilities';
+import notificationRoutes from './routes/notifications';
 import { ensureDir, uploadsDir } from './paths';
 import { setupSocket } from './socket';
 import { startBackupScheduler } from './scheduler';
@@ -64,6 +65,7 @@ app.use('/api/settings', systemRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/psychologist', psychologistRoutes);
 app.use('/api/utilities', utilitiesRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Базовий роут для перевірки
 app.get('/api/health', (req, res) => {

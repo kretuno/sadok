@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const kindergartenSettings = sqliteTable('kindergarten_settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -405,6 +405,33 @@ export const messages = sqliteTable('messages', {
   isRead: integer('is_read', { mode: 'boolean' }).default(false),
   timestamp: integer('timestamp', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
+
+export const systemNotifications = sqliteTable('system_notifications', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  fingerprint: text('fingerprint').notNull().unique(),
+  type: text('type').notNull(),
+  module: text('module'),
+  severity: text('severity').notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  actionPath: text('action_path').notNull(),
+  entityType: text('entity_type'),
+  entityId: integer('entity_id'),
+  firstSeenAt: integer('first_seen_at', { mode: 'timestamp' }).notNull(),
+  lastSeenAt: integer('last_seen_at', { mode: 'timestamp' }).notNull(),
+  resolvedAt: integer('resolved_at', { mode: 'timestamp' }),
+});
+
+export const notificationUserStates = sqliteTable('notification_user_states', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  notificationId: integer('notification_id').notNull().references(() => systemNotifications.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  readAt: integer('read_at', { mode: 'timestamp' }),
+  snoozedUntil: integer('snoozed_until', { mode: 'timestamp' }),
+  dismissedAt: integer('dismissed_at', { mode: 'timestamp' }),
+}, (table) => [
+  uniqueIndex('notification_user_state_unique').on(table.notificationId, table.userId),
+]);
 
 export const usersRelations = relations(users, ({ many }) => ({
   messagesSent: many(messages),
