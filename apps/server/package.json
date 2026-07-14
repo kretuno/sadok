@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "tsx --test test/*.test.ts",
+    "test": "tsx --test test/run.ts",
     "generate": "drizzle-kit generate:sqlite",
     "push": "drizzle-kit push",
     "dev": "tsx watch src/index.ts",
