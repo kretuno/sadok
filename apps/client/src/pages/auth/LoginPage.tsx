@@ -158,6 +158,8 @@ const LoginPage: React.FC = () => {
               className="ui-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              maxLength={64}
               required
             />
           </div>
@@ -172,6 +174,8 @@ const LoginPage: React.FC = () => {
                 className="ui-input pr-12"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                maxLength={128}
                 required
               />
               <button

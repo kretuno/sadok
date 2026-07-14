@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 import express from 'express';
+import multer from 'multer';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
@@ -37,7 +38,7 @@ const io = new Server(httpServer, {
 });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use('/uploads', express.static(uploadsDir));
 
 // Логування запитів
@@ -67,6 +68,33 @@ app.use('/api/utilities', utilitiesRoutes);
 // Базовий роут для перевірки
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'SADOK Server is running' });
+});
+
+app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (error instanceof multer.MulterError) {
+    const status = error.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    return res.status(status).json({
+      message: error.code === 'LIMIT_FILE_SIZE'
+        ? 'Файл перевищує дозволений розмір'
+        : 'Помилка завантаження файлу',
+    });
+  }
+
+  if (typeof error === 'object' && error !== null && 'type' in error) {
+    if (error.type === 'entity.too.large') {
+      return res.status(413).json({ message: 'Запит перевищує дозволений розмір' });
+    }
+    if (error instanceof SyntaxError && error.type === 'entity.parse.failed') {
+      return res.status(400).json({ message: 'Некоректний формат JSON' });
+    }
+  }
+
+  if (error) {
+    console.error('[Unhandled request error]', error);
+    return res.status(500).json({ message: 'Внутрішня помилка сервера' });
+  }
+
+  next();
 });
 
 // Socket.io логіка

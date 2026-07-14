@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sadok-default-local-jwt-secret-key
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { fullName, username, password, role } = req.body;
+    const { fullName, username, password, role, permissions } = req.body;
 
     // Перевірка чи існує користувач
     const existingUser = await db.query.users.findFirst({
@@ -28,12 +28,8 @@ export const register = async (req: Request, res: Response) => {
       fullName,
       username,
       passwordHash,
-      role: role || 'admin',
-      permissions: JSON.stringify({
-        dashboard: 'view',
-        inventory: 'edit',
-        reports: 'view'
-      }),
+      role,
+      permissions: JSON.stringify(normalizePermissionMatrix(permissions)),
     }).returning();
 
     await logAuditEvent({
@@ -44,7 +40,7 @@ export const register = async (req: Request, res: Response) => {
         userId: newUser[0].id,
         fullName,
         username,
-        role: role || 'admin',
+        role,
       },
       ipAddress: getClientIp(req),
     });

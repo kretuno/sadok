@@ -19,7 +19,14 @@ import { authenticateToken, authorizeAnyPermission, authorizePermission } from '
 const router = Router();
 const tempUploadDir = uploadPath('tmp');
 fs.mkdirSync(tempUploadDir, { recursive: true });
-const upload = multer({ dest: tempUploadDir });
+const upload = multer({
+  dest: tempUploadDir,
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    callback(null, allowedTypes.has(file.mimetype));
+  },
+});
 
 router.use(authenticateToken);
 

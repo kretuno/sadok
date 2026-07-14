@@ -6,10 +6,11 @@ import {
   deleteUser 
 } from '../controllers/users';
 import { authenticateToken, authorizeRoles } from '../middleware/auth';
-
-// Middleware для перевірки, що користувач - адмін. 
-// В реальному проекті тут би була інтеграція з authMiddleware.
-// Для демо ми можемо пропускати перевірку тут або зробити її в майбутньому.
+import {
+  validateCreateUserInput,
+  validateNumericId,
+  validateUpdateUserInput,
+} from '../middleware/validation';
 
 const router = Router();
 
@@ -17,8 +18,8 @@ router.use(authenticateToken);
 router.use(authorizeRoles('admin'));
 
 router.get('/', getAllUsers);
-router.post('/', createUser);
-router.put('/:id', updateUser);
-router.delete('/:id', deleteUser);
+router.post('/', validateCreateUserInput, createUser);
+router.put('/:id', validateNumericId, validateUpdateUserInput, updateUser);
+router.delete('/:id', validateNumericId, deleteUser);
 
 export default router;

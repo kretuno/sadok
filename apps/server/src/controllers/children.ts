@@ -191,7 +191,15 @@ export const uploadChildPhotoHandler = async (req: AuthRequest, res: Response) =
     const uploadsDir = uploadPath('children', String(childId));
     fs.mkdirSync(uploadsDir, { recursive: true });
 
-    const extension = path.extname(file.originalname || '') || '.jpg';
+    const extensionByMimeType: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+    };
+    const extension = extensionByMimeType[file.mimetype];
+    if (!extension) {
+      throw new Error('Дозволено лише фото JPEG, PNG або WebP');
+    }
     const fileName = `profile-${Date.now()}${extension.toLowerCase()}`;
     const destination = path.join(uploadsDir, fileName);
 

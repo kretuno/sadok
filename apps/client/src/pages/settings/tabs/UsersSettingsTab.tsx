@@ -249,15 +249,15 @@ const UsersSettingsTab: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-sm font-bold text-gray-600 mb-1">ПІБ (Ім'я)</label>
-                  <input type="text" name="fullName" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="ui-input w-full bg-gray-50" required />
+                  <input type="text" name="fullName" value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="ui-input w-full bg-gray-50" maxLength={120} autoComplete="name" required />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-600 mb-1">Логін</label>
-                  <input type="text" name="username" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} className="ui-input w-full bg-gray-50" required disabled={!!editingId} />
+                  <input type="text" name="username" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} className="ui-input w-full bg-gray-50" maxLength={64} autoComplete="username" required disabled={!!editingId} />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-600 mb-1">Пароль {editingId && '(залиште порожнім, щоб не змінювати)'}</label>
-                  <input type="password" name="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="ui-input w-full bg-gray-50" required={!editingId} />
+                  <input type="password" name="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="ui-input w-full bg-gray-50" minLength={formData.password ? 8 : undefined} maxLength={128} autoComplete="new-password" required={!editingId} />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-600 mb-1">Рівень доступу</label>

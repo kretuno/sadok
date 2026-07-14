@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
+import path from 'path';
 import { ensureDir, uploadPath } from '../paths';
 import { 
   getSettings, 
@@ -18,7 +19,14 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth';
 
 const router = Router();
 const systemUploadDir = ensureDir(uploadPath('tmp'));
-const upload = multer({ dest: systemUploadDir });
+const upload = multer({
+  dest: systemUploadDir,
+  limits: { fileSize: 250 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    callback(null, ['.db', '.sqlite', '.sqlite3', '.gz'].includes(extension));
+  },
+});
 
 router.get('/', getSettings);
 router.put('/', authenticateToken, authorizeRoles('admin'), updateSettings);

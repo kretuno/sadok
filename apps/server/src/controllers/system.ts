@@ -115,7 +115,15 @@ const listBackups = () => {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
+const assertValidSqliteBuffer = (buffer: Buffer) => {
+  const sqliteHeader = Buffer.from('SQLite format 3\0');
+  if (buffer.length < sqliteHeader.length || !buffer.subarray(0, sqliteHeader.length).equals(sqliteHeader)) {
+    throw new Error('Файл не є коректною базою SQLite');
+  }
+};
+
 const restoreDbFromBuffer = (buffer: Buffer) => {
+  assertValidSqliteBuffer(buffer);
   const dbPath = getDbPath();
   fs.writeFileSync(dbPath, buffer);
   return dbPath;
@@ -373,11 +381,13 @@ export const restoreBackup = async (req: Request, res: Response) => {
     
     const uploadedBuffer = fs.readFileSync(req.file.path);
     const originalName = req.file.originalname || 'uploaded_backup.db';
-    const isCompressed = originalName.endsWith('.gz');
-    const restoredBuffer = isCompressed ? zlib.gunzipSync(uploadedBuffer) : uploadedBuffer;
+    const isCompressed = originalName.toLowerCase().endsWith('.gz');
+    const restoredBuffer = isCompressed
+      ? zlib.gunzipSync(uploadedBuffer, { maxOutputLength: 500 * 1024 * 1024 })
+      : uploadedBuffer;
+    assertValidSqliteBuffer(restoredBuffer);
     const safetyBackup = await createCompressedBackup('before_upload_restore');
     const dbPath = restoreDbFromBuffer(restoredBuffer);
-    fs.unlinkSync(req.file.path);
 
     await logAuditEvent({
       actionType: 'restore',
@@ -397,7 +407,11 @@ export const restoreBackup = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Помилка відновлення:', error);
-    res.status(500).json({ message: 'Помилка при відновленні з бекапу' });
+    res.status(400).json({ message: 'Файл резервної копії пошкоджений або має некоректний формат' });
+  } finally {
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
   }
 };
 
