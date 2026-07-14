@@ -69,6 +69,22 @@ test('version 2 permissions do not inherit unspecified actions', () => {
   });
 });
 
+test('dependent actions imply view permission', () => {
+  const matrix = normalizePermissionMatrix({
+    version: 2,
+    modules: {
+      reports: { view: false, edit: true, delete: false, print: false },
+    },
+  });
+
+  assert.deepEqual(matrix.modules.reports, {
+    view: true,
+    edit: true,
+    delete: false,
+    print: false,
+  });
+});
+
 test('admin role bypasses the module matrix', () => {
   const denied = normalizePermissionMatrix({ version: 2, modules: {} });
 

@@ -52,7 +52,6 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
   };
 
   useEffect(() => {
-    setLoadedRecipeId(null);
     if (!selectedRecipeId) return;
     let active = true;
 
@@ -143,7 +142,12 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
           {recipes.map((recipe) => (
             <button
               key={recipe.id}
-              onClick={() => setSelectedRecipeId(recipe.id)}
+              onClick={() => {
+                if (recipe.id !== selectedRecipeId) {
+                  setLoadedRecipeId(null);
+                  setSelectedRecipeId(recipe.id);
+                }
+              }}
               className={`w-full rounded-2xl border p-4 text-left transition-all ${selectedRecipeId === recipe.id ? 'border-warm-500 bg-warm-50' : 'border-warm-100 hover:bg-warm-50/50'}`}
             >
               <div className="flex items-center justify-between gap-4">

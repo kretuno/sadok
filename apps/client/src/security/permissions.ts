@@ -54,12 +54,18 @@ export const normalizePermissionMatrix = (rawPermissions: unknown): PermissionMa
   if (parsed.version === 2 && isRecord(parsed.modules)) {
     for (const module of permissionModules) {
       const value = parsed.modules[module];
-      normalized.modules[module] = {
+      const next = {
         view: isRecord(value) && value.view === true,
         edit: isRecord(value) && value.edit === true,
         delete: isRecord(value) && value.delete === true,
         print: isRecord(value) && value.print === true,
       };
+
+      if (next.edit || next.delete || next.print) {
+        next.view = true;
+      }
+
+      normalized.modules[module] = next;
     }
     return normalized;
   }

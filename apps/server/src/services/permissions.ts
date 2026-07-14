@@ -73,6 +73,10 @@ export const normalizePermissionMatrix = (rawPermissions: unknown): PermissionMa
         }
       }
 
+      if (next.edit || next.delete || next.print) {
+        next.view = true;
+      }
+
       normalized.modules[module] = next;
     }
 
