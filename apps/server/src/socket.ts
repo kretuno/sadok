@@ -11,7 +11,7 @@ interface SendMessagePayload {
 }
 
 export function setupSocket(io: Server) {
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
 
     if (typeof token !== 'string' || !token) {
@@ -19,7 +19,25 @@ export function setupSocket(io: Server) {
     }
 
     try {
-      socket.data.user = verifyAuthToken(token);
+      const tokenUser = verifyAuthToken(token);
+      const account = await db.query.users.findFirst({
+        where: eq(users.id, tokenUser.id),
+        columns: {
+          role: true,
+          permissions: true,
+          isActive: true,
+        },
+      });
+
+      if (!account?.isActive) {
+        return next(new Error('Account disabled'));
+      }
+
+      socket.data.user = {
+        ...tokenUser,
+        role: account.role,
+        permissions: account.permissions,
+      };
       next();
     } catch {
       next(new Error('Invalid authentication token'));

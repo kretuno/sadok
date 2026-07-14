@@ -4,25 +4,43 @@ import api from '../../../api/axios';
 import { useAuth } from '../../../contexts/AuthContext';
 import CustomSelect from '../../../components/ui/CustomSelect';
 import Modal from '../../../components/ui/Modal';
+import {
+  createDefaultPermissionMatrix,
+  normalizePermissionMatrix,
+  permissionActions,
+  type PermissionAction,
+  type PermissionMatrix,
+  type PermissionModule,
+} from '../../../security/permissions';
 
 interface User {
   id: number;
   fullName: string;
   username: string;
   role: string;
-  permissions: any;
+  permissions: unknown;
   isActive: boolean;
 }
 
-const modules = [
+const modules: Array<{ id: PermissionModule; label: string }> = [
+  { id: 'inventory', label: 'Склад продуктів' },
   { id: 'children', label: 'Діти та групи' },
-  { id: 'menu', label: 'Меню' },
+  { id: 'menu', label: 'Меню та рецепти' },
   { id: 'employees', label: 'Співробітники' },
-  { id: 'inventory', label: 'Склад та ТМЦ' },
+  { id: 'property', label: 'Склад ТМЦ' },
   { id: 'medical', label: 'Медкабінет' },
-  { id: 'attendance', label: 'Табель відвідування' },
+  { id: 'attendance', label: 'Відвідування' },
   { id: 'psychologist', label: 'Кабінет психолога' },
+  { id: 'utilities', label: 'Лічильники' },
+  { id: 'reports', label: 'Звіти' },
 ];
+
+const actionLabels: Record<PermissionAction, string> = {
+  view: 'Перегляд',
+  edit: 'Зміна',
+  delete: 'Видалення',
+  print: 'Друк',
+};
 
 type Notice = {
   type: 'success' | 'error';
@@ -45,7 +63,7 @@ const UsersSettingsTab: React.FC = () => {
     isActive: true,
   });
 
-  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
+  const [permissions, setPermissions] = useState<PermissionMatrix>(createDefaultPermissionMatrix);
 
   useEffect(() => {
     fetchUsers();
@@ -65,7 +83,7 @@ const UsersSettingsTab: React.FC = () => {
     setNotice(null);
     setEditingId(null);
     setFormData({ fullName: '', username: '', password: '', role: 'user', isActive: true });
-    setPermissions({});
+    setPermissions(createDefaultPermissionMatrix());
     setIsModalOpen(true);
   };
 
@@ -79,7 +97,7 @@ const UsersSettingsTab: React.FC = () => {
       role: u.role,
       isActive: u.isActive,
     });
-    setPermissions(typeof u.permissions === 'string' ? JSON.parse(u.permissions || '{}') : u.permissions || {});
+    setPermissions(normalizePermissionMatrix(u.permissions));
     setIsModalOpen(true);
   };
 
@@ -119,11 +137,28 @@ const UsersSettingsTab: React.FC = () => {
     }
   };
 
-  const togglePermission = (moduleId: string) => {
-    setPermissions(prev => ({
-      ...prev,
-      [moduleId]: !prev[moduleId]
-    }));
+  const togglePermission = (moduleId: PermissionModule, action: PermissionAction) => {
+    setPermissions((previous) => {
+      const current = previous.modules[moduleId];
+      const nextValue = !current[action];
+      const nextModule = { ...current, [action]: nextValue };
+
+      if (action === 'view' && !nextValue) {
+        for (const permissionAction of permissionActions) {
+          nextModule[permissionAction] = false;
+        }
+      } else if (action !== 'view' && nextValue) {
+        nextModule.view = true;
+      }
+
+      return {
+        ...previous,
+        modules: {
+          ...previous.modules,
+          [moduleId]: nextModule,
+        },
+      };
+    });
   };
 
   if (user?.role !== 'admin') {
@@ -202,7 +237,7 @@ const UsersSettingsTab: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="w-full max-w-4xl rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h3 className="text-xl font-bold text-gray-800">
                 {editingId ? 'Редагування користувача' : 'Новий користувач'}
@@ -245,20 +280,30 @@ const UsersSettingsTab: React.FC = () => {
 
               {formData.role === 'user' && (
                 <div className="mt-6 border-t pt-6">
-                  <h4 className="font-bold text-gray-800 mb-3 block">Дозволи на редагування (зміна даних)</h4>
-                  <p className="text-xs text-gray-500 mb-4 block">У режимі "Лише перегляд" користувач бачить усі розділи, але додавати, редагувати чи видаляти може лише в позначених модулях.</p>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    {modules.map(mod => (
-                      <label key={mod.id} className="flex items-center gap-3 p-3 border rounded-xl hover:bg-gray-50 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={permissions[mod.id] || false}
-                          onChange={() => togglePermission(mod.id)}
-                          className="w-5 h-5 text-warm-500 border-gray-300 rounded"
-                        />
-                        <span className="font-semibold text-gray-700">{mod.label}</span>
-                      </label>
+                  <h4 className="mb-2 font-bold text-gray-800">Матриця доступу</h4>
+                  <p className="mb-4 text-xs text-gray-500">Вимкнення перегляду приховує розділ. Інші дії автоматично вмикають перегляд.</p>
+
+                  <div className="overflow-x-auto rounded-2xl border border-gray-200">
+                    <div className="grid min-w-[680px] grid-cols-[minmax(180px,1fr)_repeat(4,110px)] bg-gray-50 text-xs font-bold text-gray-600">
+                      <div className="p-3">Модуль</div>
+                      {permissionActions.map((action) => (
+                        <div key={action} className="p-3 text-center">{actionLabels[action]}</div>
+                      ))}
+                    </div>
+                    {modules.map((module) => (
+                      <div key={module.id} className="grid min-w-[680px] grid-cols-[minmax(180px,1fr)_repeat(4,110px)] items-center border-t border-gray-100">
+                        <div className="p-3 text-sm font-semibold text-gray-700">{module.label}</div>
+                        {permissionActions.map((action) => (
+                          <label key={action} className="flex h-11 items-center justify-center" title={`${module.label}: ${actionLabels[action]}`}>
+                            <input
+                              type="checkbox"
+                              checked={permissions.modules[module.id][action]}
+                              onChange={() => togglePermission(module.id, action)}
+                              className="h-5 w-5 rounded border-gray-300 text-warm-500 focus:ring-warm-500"
+                            />
+                          </label>
+                        ))}
+                      </div>
                     ))}
                   </div>
                 </div>

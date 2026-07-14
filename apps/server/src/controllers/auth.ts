@@ -5,6 +5,7 @@ import { db } from '../db';
 import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { getClientIp, logAuditEvent } from '../services/audit';
+import { normalizePermissionMatrix } from '../services/permissions';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'sadok-default-local-jwt-secret-key-2026';
 
@@ -128,7 +129,7 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         fullName: user.fullName,
         role: user.role,
-        permissions: typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions
+        permissions: normalizePermissionMatrix(user.permissions)
       }
     });
   } catch (error) {

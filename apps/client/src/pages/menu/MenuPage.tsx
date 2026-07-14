@@ -27,6 +27,7 @@ import api from '../../api/axios';
 import CustomSelect from '../../components/ui/CustomSelect';
 import Modal from '../../components/ui/Modal';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 type Phase4Tab = 'recipes' | 'dailyMenu';
 
@@ -259,6 +260,8 @@ type ConfirmAction = {
 
 const MenuPage: React.FC = () => {
   const { settings } = useSettings();
+  const { can } = useAuth();
+  const canPrintMenu = can('menu', 'print');
   const [activeTab, setActiveTab] = useState<Phase4Tab>('dailyMenu');
   const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
@@ -1700,14 +1703,16 @@ const MenuPage: React.FC = () => {
               >
                 Закрити
               </button>
-              <button
-                type="button"
-                disabled={!printPreview || isPreparingPrint}
-                onClick={handlePrintFromPreview}
-                className="ui-button-primary px-4"
-              >
-                Друкувати
-              </button>
+              {canPrintMenu && (
+                <button
+                  type="button"
+                  disabled={!printPreview || isPreparingPrint}
+                  onClick={handlePrintFromPreview}
+                  className="ui-button-primary px-4"
+                >
+                  Друкувати
+                </button>
+              )}
             </div>
           </div>
 
@@ -1792,15 +1797,19 @@ const MenuPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => handlePrint('parents')} className="ui-button-secondary border-emerald-200 px-4 text-emerald-700 hover:bg-emerald-50">
-                    <BookOpen size={16} /> Звітне меню
-                  </button>
-                  <button onClick={() => handlePrint('kitchen')} className="ui-button-secondary border-orange-200 px-4 text-orange-700 hover:bg-orange-50">
-                    <Utensils size={16} /> Розкладка кухні
-                  </button>
-                  <button onClick={() => handlePrint('requirement')} className="ui-button-secondary border-purple-200 px-4 text-purple-700 hover:bg-purple-50">
-                    <FileText size={16} /> Меню-вимога
-                  </button>
+                  {canPrintMenu && (
+                    <>
+                      <button onClick={() => handlePrint('parents')} className="ui-button-secondary border-emerald-200 px-4 text-emerald-700 hover:bg-emerald-50">
+                        <BookOpen size={16} /> Звітне меню
+                      </button>
+                      <button onClick={() => handlePrint('kitchen')} className="ui-button-secondary border-orange-200 px-4 text-orange-700 hover:bg-orange-50">
+                        <Utensils size={16} /> Розкладка кухні
+                      </button>
+                      <button onClick={() => handlePrint('requirement')} className="ui-button-secondary border-purple-200 px-4 text-purple-700 hover:bg-purple-50">
+                        <FileText size={16} /> Меню-вимога
+                      </button>
+                    </>
+                  )}
                   {!menuForm.isConfirmed && (
                     <button
                       onClick={() => {

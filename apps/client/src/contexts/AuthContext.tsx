@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  hasPermission,
+  type PermissionAction,
+  type PermissionModule,
+} from '../security/permissions';
 
-interface User {
+export interface User {
   id: number;
   fullName: string;
   role: string;
-  permissions: any;
+  permissions: unknown;
 }
 
 interface AuthContextType {
@@ -13,6 +18,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   isLoading: boolean;
+  can: (module: PermissionModule, action: PermissionAction) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,8 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('user');
   };
 
+  const can = (module: PermissionModule, action: PermissionAction) =>
+    Boolean(user && hasPermission(user.role, user.permissions, module, action));
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isLoading, can }}>
       {children}
     </AuthContext.Provider>
   );

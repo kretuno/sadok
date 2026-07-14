@@ -15,32 +15,32 @@ import {
   createMedication,
   spendMedication
 } from '../controllers/medical';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, authorizePermission } from '../middleware/auth';
 
 const router = Router();
 
 router.use(authenticateToken);
 
 // Children
-router.get('/children', getMedicalChildren);
-router.get('/children/:childId', getChildMedicalDetails);
-router.put('/children/:childId/card', updateChildMedicalCard);
-router.post('/children/:childId/measurements', createChildMeasurement);
+router.get('/children', authorizePermission('medical', 'view'), getMedicalChildren);
+router.get('/children/:childId', authorizePermission('medical', 'view'), getChildMedicalDetails);
+router.put('/children/:childId/card', authorizePermission('medical', 'edit'), updateChildMedicalCard);
+router.post('/children/:childId/measurements', authorizePermission('medical', 'edit'), createChildMeasurement);
 
 // Illnesses
-router.get('/illnesses', getIllnesses);
-router.post('/illnesses', createIllness);
-router.put('/illnesses/:id', updateIllness);
+router.get('/illnesses', authorizePermission('medical', 'view'), getIllnesses);
+router.post('/illnesses', authorizePermission('medical', 'edit'), createIllness);
+router.put('/illnesses/:id', authorizePermission('medical', 'edit'), updateIllness);
 
 // Vaccinations
-router.get('/vaccinations', getVaccinations);
-router.post('/vaccinations', createVaccination);
-router.put('/vaccinations/:id', updateVaccination);
+router.get('/vaccinations', authorizePermission('medical', 'view'), getVaccinations);
+router.post('/vaccinations', authorizePermission('medical', 'edit'), createVaccination);
+router.put('/vaccinations/:id', authorizePermission('medical', 'edit'), updateVaccination);
 
 // Medications
-router.get('/medications/movements', getMedicationMovements);
-router.get('/medications', getMedications);
-router.post('/medications', createMedication);
-router.post('/medications/spend', spendMedication);
+router.get('/medications/movements', authorizePermission('medical', 'view'), getMedicationMovements);
+router.get('/medications', authorizePermission('medical', 'view'), getMedications);
+router.post('/medications', authorizePermission('medical', 'edit'), createMedication);
+router.post('/medications/spend', authorizePermission('medical', 'edit'), spendMedication);
 
 export default router;

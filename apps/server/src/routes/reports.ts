@@ -14,24 +14,33 @@ import {
   getUtilitiesReport,
   getAuditReport,
 } from '../controllers/reports';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, authorizeAnyPermission, authorizePermission } from '../middleware/auth';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/saldo', getInventorySaldo);
-router.get('/medications', getMedicationsReport);
-router.get('/tmc', getTmcReport);
-router.get('/menus', getMenusReport);
-router.get('/children', getChildrenReport);
-router.get('/sick', getSickChildrenReport);
-router.get('/psychology', getPsychologyReport);
-router.get('/attendance', getAttendanceReport);
-router.get('/spent-products', getSpentProductsReport);
-router.get('/spent-medications', getSpentMedicationsReport);
-router.get('/detailed-menus', getDetailedMenusReport);
-router.get('/utilities', getUtilitiesReport);
-router.get('/audit', getAuditReport);
+const canViewReports = authorizePermission('reports', 'view');
+
+router.get('/saldo', canViewReports, getInventorySaldo);
+router.get('/medications', canViewReports, getMedicationsReport);
+router.get('/tmc', canViewReports, getTmcReport);
+router.get('/menus', canViewReports, getMenusReport);
+router.get('/children', canViewReports, getChildrenReport);
+router.get('/sick', canViewReports, getSickChildrenReport);
+router.get('/psychology', canViewReports, getPsychologyReport);
+router.get('/attendance', canViewReports, getAttendanceReport);
+router.get('/spent-products', canViewReports, getSpentProductsReport);
+router.get('/spent-medications', canViewReports, getSpentMedicationsReport);
+router.get('/detailed-menus', canViewReports, getDetailedMenusReport);
+router.get(
+  '/utilities',
+  authorizeAnyPermission(
+    { module: 'reports', action: 'view' },
+    { module: 'utilities', action: 'print' }
+  ),
+  getUtilitiesReport
+);
+router.get('/audit', canViewReports, getAuditReport);
 
 export default router;

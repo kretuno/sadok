@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, authorizePermission } from '../middleware/auth';
 import {
   createMeter,
   createReading,
@@ -15,15 +15,15 @@ const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/meters', getMeters);
-router.post('/meters', createMeter);
-router.put('/meters/:id', updateMeter);
+router.get('/meters', authorizePermission('utilities', 'view'), getMeters);
+router.post('/meters', authorizePermission('utilities', 'edit'), createMeter);
+router.put('/meters/:id', authorizePermission('utilities', 'edit'), updateMeter);
 
-router.get('/readings', getReadings);
-router.post('/readings', createReading);
+router.get('/readings', authorizePermission('utilities', 'view'), getReadings);
+router.post('/readings', authorizePermission('utilities', 'edit'), createReading);
 
-router.get('/tariffs', getTariffs);
-router.post('/tariffs', createTariff);
-router.put('/tariffs/:id', updateTariff);
+router.get('/tariffs', authorizePermission('utilities', 'view'), getTariffs);
+router.post('/tariffs', authorizePermission('utilities', 'edit'), createTariff);
+router.put('/tariffs/:id', authorizePermission('utilities', 'edit'), updateTariff);
 
 export default router;

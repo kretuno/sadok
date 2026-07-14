@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FileText, Printer, Download, Filter } from 'lucide-react';
 import api from '../../api/axios';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useAuth } from '../../contexts/AuthContext';
 import CustomSelect from '../../components/ui/CustomSelect';
 
 type ReportType = 
@@ -23,6 +24,8 @@ type ReportType =
 const ReportsPage: React.FC = () => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { can } = useAuth();
+  const canPrintReports = can('reports', 'print');
   const [reportType, setReportType] = useState<ReportType>('saldo');
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -546,18 +549,20 @@ const ReportsPage: React.FC = () => {
             <FileText className="text-warm-500" />
             {t('reports_generator')}
           </h1>
-          <div className="flex space-x-3">
-            <button
-              onClick={() => void handleExport()}
-              disabled={exporting}
-              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-70 px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 border border-emerald-200"
-            >
-              <Download size={18} /> {exporting ? 'Експорт...' : t('reports_export_excel')}
-            </button>
-            <button onClick={handlePrint} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 border border-blue-200">
-              <Printer size={18} /> {t('reports_print')}
-            </button>
-          </div>
+          {canPrintReports && (
+            <div className="flex space-x-3">
+              <button
+                onClick={() => void handleExport()}
+                disabled={exporting}
+                className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-70 px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 border border-emerald-200"
+              >
+                <Download size={18} /> {exporting ? 'Експорт...' : t('reports_export_excel')}
+              </button>
+              <button onClick={handlePrint} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 border border-blue-200">
+                <Printer size={18} /> {t('reports_print')}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-4 items-end">

@@ -14,7 +14,7 @@ import {
   updateChildHandler,
   uploadChildPhotoHandler,
 } from '../controllers/children';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, authorizeAnyPermission, authorizePermission } from '../middleware/auth';
 
 const router = Router();
 const tempUploadDir = uploadPath('tmp');
@@ -23,15 +23,47 @@ const upload = multer({ dest: tempUploadDir });
 
 router.use(authenticateToken);
 
-router.get('/groups', getGroupsHandler);
-router.post('/groups', createGroupHandler);
-router.get('/groups/:id', getGroupDetailsHandler);
-router.put('/groups/:id', updateGroupHandler);
-router.get('/', getChildrenHandler);
-router.post('/', createChildHandler);
-router.patch('/:id/archive', archiveChildHandler);
-router.post('/:id/regenerate-qr', regenerateQRTokenHandler);
-router.post('/:id/photo', upload.single('photo'), uploadChildPhotoHandler);
-router.patch('/:id', updateChildHandler);
+router.get(
+  '/groups',
+  authorizeAnyPermission(
+    { module: 'children', action: 'view' },
+    { module: 'menu', action: 'view' },
+    { module: 'property', action: 'view' },
+    { module: 'attendance', action: 'view' },
+    { module: 'psychologist', action: 'view' }
+  ),
+  getGroupsHandler
+);
+router.post('/groups', authorizePermission('children', 'edit'), createGroupHandler);
+router.get('/groups/:id', authorizePermission('children', 'view'), getGroupDetailsHandler);
+router.put('/groups/:id', authorizePermission('children', 'edit'), updateGroupHandler);
+router.get('/', authorizePermission('children', 'view'), getChildrenHandler);
+router.post('/', authorizePermission('children', 'edit'), createChildHandler);
+router.patch(
+  '/:id/archive',
+  authorizeAnyPermission(
+    { module: 'children', action: 'delete' },
+    { module: 'medical', action: 'delete' }
+  ),
+  archiveChildHandler
+);
+router.post('/:id/regenerate-qr', authorizePermission('children', 'edit'), regenerateQRTokenHandler);
+router.post(
+  '/:id/photo',
+  authorizeAnyPermission(
+    { module: 'children', action: 'edit' },
+    { module: 'medical', action: 'edit' }
+  ),
+  upload.single('photo'),
+  uploadChildPhotoHandler
+);
+router.patch(
+  '/:id',
+  authorizeAnyPermission(
+    { module: 'children', action: 'edit' },
+    { module: 'medical', action: 'edit' }
+  ),
+  updateChildHandler
+);
 
 export default router;

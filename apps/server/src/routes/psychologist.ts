@@ -7,14 +7,26 @@ import {
   children,
 } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, authorizeAnyPermission, authorizePermission } from '../middleware/auth';
 
 const router = express.Router();
 
 router.use(authenticateToken);
 
+const canViewPsychology = authorizePermission('psychologist', 'view');
+const canEditPsychology = authorizePermission('psychologist', 'edit');
+const canDeletePsychology = authorizePermission('psychologist', 'delete');
+const canViewPsychologyCard = authorizeAnyPermission(
+  { module: 'psychologist', action: 'view' },
+  { module: 'medical', action: 'view' }
+);
+const canEditPsychologyCard = authorizeAnyPermission(
+  { module: 'psychologist', action: 'edit' },
+  { module: 'medical', action: 'edit' }
+);
+
 // Отримання всіх дітей із короткими даними психологічної картки
-router.get('/cards', async (req, res) => {
+router.get('/cards', canViewPsychologyCard, async (req, res) => {
   try {
     const allChildren = await db.select({
       id: children.id,
@@ -38,9 +50,9 @@ router.get('/cards', async (req, res) => {
 });
 
 // Отримання психологічної картки конкретної дитини
-router.get('/cards/:childId', async (req, res) => {
+router.get('/cards/:childId', canViewPsychologyCard, async (req, res) => {
   try {
-    const childId = parseInt(req.params.childId);
+    const childId = parseInt(String(req.params.childId));
     const card = await db.select().from(childPsychologicalCards).where(eq(childPsychologicalCards.childId, childId));
     res.json(card[0] || null);
   } catch (error) {
@@ -50,7 +62,7 @@ router.get('/cards/:childId', async (req, res) => {
 });
 
 // Створення або оновлення психологічної картки
-router.post('/cards', async (req, res) => {
+router.post('/cards', canEditPsychologyCard, async (req, res) => {
   try {
     const { childId, temperament, adaptationLevel, speechDevelopment, socialSkills, familyStatus, notes, recommendations } = req.body;
     
@@ -88,7 +100,7 @@ router.post('/cards', async (req, res) => {
 });
 
 // Отримання консультацій
-router.get('/consultations', async (req, res) => {
+router.get('/consultations', canViewPsychology, async (req, res) => {
   try {
     const records = await db.select()
       .from(psychologicalConsultations)
@@ -110,7 +122,7 @@ router.get('/consultations', async (req, res) => {
 });
 
 // Додавання консультації
-router.post('/consultations', async (req, res) => {
+router.post('/consultations', canEditPsychology, async (req, res) => {
   try {
     const { childId, consultationType, topic, participants, notes, date } = req.body;
     const result = await db.insert(psychologicalConsultations).values({
@@ -130,9 +142,9 @@ router.post('/consultations', async (req, res) => {
 });
 
 // Оновлення консультації
-router.put('/consultations/:id', async (req, res) => {
+router.put('/consultations/:id', canEditPsychology, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { childId, consultationType, topic, participants, notes, date } = req.body;
 
     const result = await db.update(psychologicalConsultations).set({
@@ -152,9 +164,9 @@ router.put('/consultations/:id', async (req, res) => {
 });
 
 // Видалення консультації
-router.delete('/consultations/:id', async (req, res) => {
+router.delete('/consultations/:id', canDeletePsychology, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     await db.delete(psychologicalConsultations).where(eq(psychologicalConsultations.id, id));
     res.json({ success: true });
   } catch (error) {
@@ -164,7 +176,7 @@ router.delete('/consultations/:id', async (req, res) => {
 });
 
 // Отримання списку дітей з інклюзивними картками
-router.get('/inclusive', async (req, res) => {
+router.get('/inclusive', canViewPsychology, async (req, res) => {
   try {
     const allChildren = await db.select({
       id: children.id,
@@ -188,9 +200,9 @@ router.get('/inclusive', async (req, res) => {
 });
 
 // Отримання конкретної інклюзивної картки
-router.get('/inclusive/:childId', async (req, res) => {
+router.get('/inclusive/:childId', canViewPsychology, async (req, res) => {
   try {
-    const childId = parseInt(req.params.childId);
+    const childId = parseInt(String(req.params.childId));
     const card = await db.select().from(childInclusiveCards).where(eq(childInclusiveCards.childId, childId));
     res.json(card[0] || null);
   } catch (error) {
@@ -200,7 +212,7 @@ router.get('/inclusive/:childId', async (req, res) => {
 });
 
 // Створення або оновлення інклюзивної картки
-router.post('/inclusive', async (req, res) => {
+router.post('/inclusive', canEditPsychology, async (req, res) => {
   try {
     const {
       childId,

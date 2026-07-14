@@ -5,6 +5,7 @@ import { db } from '../db';
 import { users } from '../db/schema';
 import { AuthRequest } from '../middleware/auth';
 import { getClientIp, logAuditEvent } from '../services/audit';
+import { normalizePermissionMatrix } from '../services/permissions';
 
 export const getAllUsers = async (req: AuthRequest, res: Response) => {
   try {
@@ -19,7 +20,10 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
         createdAt: users.createdAt,
       })
       .from(users);
-    res.json(list);
+    res.json(list.map((user) => ({
+      ...user,
+      permissions: normalizePermissionMatrix(user.permissions),
+    })));
   } catch (error) {
     res.status(500).json({ message: 'Помилка отримання користувачів' });
   }
@@ -52,7 +56,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
         username,
         passwordHash,
         role,
-        permissions: JSON.stringify(permissions),
+        permissions: JSON.stringify(normalizePermissionMatrix(permissions)),
       })
       .returning({
         id: users.id,
@@ -110,7 +114,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     } = {
       fullName,
       role,
-      permissions: JSON.stringify(permissions),
+        permissions: JSON.stringify(normalizePermissionMatrix(permissions)),
       isActive,
     };
 

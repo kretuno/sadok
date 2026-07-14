@@ -3,6 +3,7 @@ import { Activity, AlertCircle, Calculator, CheckCircle2, Flame, Gauge, Plus, Wa
 import api from '../../api/axios';
 import CustomSelect from '../../components/ui/CustomSelect';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface UtilityMeter {
   id: number;
@@ -115,6 +116,7 @@ type Notice = {
 };
 
 const UtilitiesPage: React.FC = () => {
+  const { can } = useAuth();
   const { settings } = useSettings();
   const [meters, setMeters] = useState<UtilityMeter[]>([]);
   const [readings, setReadings] = useState<UtilityReading[]>([]);
@@ -485,13 +487,15 @@ const UtilitiesPage: React.FC = () => {
               />
             </div>
           </div>
-          <button
-            onClick={handlePrintUtilitiesReport}
-            className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
-          >
-            <Printer size={18} />
-            Друк звіту
-          </button>
+          {can('utilities', 'print') && (
+            <button
+              onClick={handlePrintUtilitiesReport}
+              className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+            >
+              <Printer size={18} />
+              Друк звіту
+            </button>
+          )}
         </div>
       </div>
 
