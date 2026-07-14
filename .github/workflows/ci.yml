@@ -58,3 +58,22 @@ jobs:
 
       - name: Build server
         run: npm run build --prefix apps/server
+
+      - name: Prepare Windows server runtime
+        if: matrix.os == 'windows-latest'
+        run: node scripts/prepare-server-runtime.js --arch=x64
+
+      - name: Package Windows installer
+        if: matrix.os == 'windows-latest'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      - name: Upload Windows installer smoke artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sadok-windows-x64-${{ github.sha }}
+          path: Install/*.exe
+          if-no-files-found: error
+          retention-days: 7
