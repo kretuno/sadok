@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Cpu, Copy, CheckCircle, RefreshCw, Wifi } from 'lucide-react';
 import api from '../../../api/axios';
 import { useSettings } from '../../../contexts/SettingsContext';
@@ -25,6 +25,7 @@ const LicenseSettingsTab: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [activating, setActivating] = useState<boolean>(false);
   const [checking, setChecking] = useState<boolean>(false);
+  const checkingRef = useRef(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -50,7 +51,8 @@ const LicenseSettingsTab: React.FC = () => {
   }, []);
 
   const checkOnlineActivation = async (silent = false) => {
-    if (checking) return;
+    if (checkingRef.current) return;
+    checkingRef.current = true;
     setChecking(true);
     if (!silent) {
       setError(null);
@@ -67,6 +69,7 @@ const LicenseSettingsTab: React.FC = () => {
     } catch (err: any) {
       if (!silent) setError(err.response?.data?.message || 'Не вдалося перевірити онлайн-активацію');
     } finally {
+      checkingRef.current = false;
       setChecking(false);
     }
   };

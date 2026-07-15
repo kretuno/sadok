@@ -1,4 +1,5 @@
 import './migrations.test';
+import './activatorConfig.test';
 import './fileValidation.test';
 import './notificationRules.test';
 import './permissions.test';

@@ -12,13 +12,14 @@ import { getClientIp, logAuditEvent } from '../services/audit';
 import { dataDir } from '../paths';
 import { assertValidSadokDatabase } from '../services/backupValidation';
 import { verifyLicenseToken } from '../services/licenseToken';
+import { normalizeActivatorApiUrl } from '../services/activatorConfig';
 
 const LICENSE_SALT = process.env.LICENSE_SALT || 'SADOK-MACHINE-SALT-2026';
 const BACKUP_PREFIX = 'sadok_backup';
 const LICENSE_PUBLIC_KEY = process.env.LICENSE_PUBLIC_KEY || '';
 const LICENSE_ISSUER = process.env.LICENSE_ISSUER || 'activator-license-server';
 const LICENSE_PRODUCT_CODE = 'SADOK';
-const ACTIVATOR_API_URL = (process.env.ACTIVATOR_API_URL || '').trim().replace(/\/+$/, '');
+const ACTIVATOR_API_URL = normalizeActivatorApiUrl(process.env.ACTIVATOR_API_URL);
 
 const getDbPath = () => path.resolve(dataDir, 'sqlite.db');
 const getBackupsDir = () => path.resolve(dataDir, 'backups');
@@ -518,13 +519,13 @@ const ensureRemoteActivationRequest = async () => {
 
 export const getMachineId = async (req: Request, res: Response) => {
   try {
-    const { rawUuid, machineId } = getMachineIdentity();
+    const { machineId } = getMachineIdentity();
     try {
       const remote = await ensureRemoteActivationRequest();
-      return res.json({ machineId: rawUuid, requestCode: remote.requestCode, localMachineCode: machineId, status: remote.status, online: true });
+      return res.json({ machineId, requestCode: remote.requestCode, localMachineCode: machineId, status: remote.status, online: true });
     } catch (remoteError) {
       console.warn('Online activation request is unavailable:', remoteError);
-      return res.json({ machineId: rawUuid, requestCode: machineId, localMachineCode: machineId, status: 'offline', online: false });
+      return res.json({ machineId, requestCode: machineId, localMachineCode: machineId, status: 'offline', online: false });
     }
   } catch (error: any) {
     console.error('Error getting machine id:', error);

@@ -241,8 +241,10 @@ export const listNotifications = async (viewer: NotificationViewer, scope: Notif
 };
 
 const ensureAccessibleNotification = async (viewer: NotificationViewer, notificationId: number) => {
-  const notifications = await listNotifications(viewer, 'all');
-  if (!notifications.some((notification) => notification.id === notificationId)) {
+  const notification = await db.query.systemNotifications.findFirst({
+    where: eq(systemNotifications.id, notificationId),
+  });
+  if (!notification || !canViewModule(viewer, notification.module)) {
     throw new Error('Сповіщення не знайдено');
   }
 };
@@ -274,7 +276,17 @@ export const dismissNotification = (viewer: NotificationViewer, notificationId: 
 
 export const markAllNotificationsRead = async (viewer: NotificationViewer) => {
   const notifications = await listNotifications(viewer, 'active');
-  for (const notification of notifications) {
-    await upsertUserState(viewer, notification.id, { readAt: new Date() });
-  }
+  if (notifications.length === 0) return;
+
+  const readAt = new Date();
+  await db.insert(notificationUserStates).values(
+    notifications.map((notification) => ({
+      notificationId: notification.id,
+      userId: viewer.id,
+      readAt,
+    }))
+  ).onConflictDoUpdate({
+    target: [notificationUserStates.notificationId, notificationUserStates.userId],
+    set: { readAt },
+  });
 };
