@@ -5,6 +5,6 @@ export default defineConfig({
   out: './drizzle',
   dialect: 'sqlite',
   dbCredentials: {
-    url: 'sqlite.db',
+    url: process.env.SADOK_SCHEMA_DB_PATH || 'sqlite.db',
   },
 });
