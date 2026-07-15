@@ -9,7 +9,11 @@ import {
   recipeIngredients,
   recipes,
 } from '../db/schema';
-import { adjustProductStock, restoreProductStock } from './stock';
+import {
+  deductProductStock,
+  getOutstandingMenuStockDeductions,
+  restoreMenuStockDeductions,
+} from './stock';
 import { getInventoryControlEnabled } from './inventoryControl';
 import {
   MenuStockShortageError,
@@ -834,15 +838,15 @@ export async function calculateMenuRequirement(menuId: number) {
 }
 
 export async function confirmMenu(menuId: number, userId?: number) {
-  const menu = await db.query.dailyMenus.findFirst({
+  const currentMenu = await db.query.dailyMenus.findFirst({
     where: eq(dailyMenus.id, menuId),
   });
 
-  if (!menu) {
+  if (!currentMenu) {
     throw new Error('Меню не знайдено');
   }
 
-  if (menu.isConfirmed) {
+  if (currentMenu.isConfirmed) {
     throw new Error('Меню вже підтверджено');
   }
 
@@ -853,71 +857,65 @@ export async function confirmMenu(menuId: number, userId?: number) {
     await validateStockAvailability(needs);
   }
 
-  if (inventoryControlEnabled) {
-    for (const need of needs) {
-      if (need.totalGrossQuantity <= 0) {
-        continue;
+  db.transaction((tx) => {
+    const menu = tx.query.dailyMenus.findFirst({
+      where: eq(dailyMenus.id, menuId),
+    }).sync();
+    if (!menu) throw new Error('Меню не знайдено');
+    if (menu.isConfirmed) throw new Error('Меню вже підтверджено');
+
+    if (inventoryControlEnabled) {
+      for (const need of needs) {
+        if (need.totalGrossQuantity <= 0) continue;
+
+        deductProductStock(tx, {
+          productId: need.productId,
+          quantity: need.totalGrossQuantity,
+          reason: `Списання згідно меню від ${menu.date.toLocaleDateString('uk-UA')}`,
+          userId,
+          menuId,
+        });
       }
-
-      await adjustProductStock({
-        productId: need.productId,
-        quantity: need.totalGrossQuantity,
-        reason: `Списання згідно меню від ${menu.date.toLocaleDateString('uk-UA')}`,
-        userId,
-      });
     }
-  }
 
-  await db
-    .update(dailyMenus)
-    .set({
+    tx.update(dailyMenus).set({
       isConfirmed: true,
       confirmedAt: new Date(),
       stockDeducted: inventoryControlEnabled && needs.some((need) => need.totalGrossQuantity > 0),
-    })
-    .where(eq(dailyMenus.id, menuId));
+    }).where(eq(dailyMenus.id, menuId)).run();
+  });
 
   return getMenuDetails(menuId);
 }
 
 export async function cancelMenuConfirmation(menuId: number, userId?: number) {
-  const menu = await db.query.dailyMenus.findFirst({
-    where: eq(dailyMenus.id, menuId),
-  });
+  db.transaction((tx) => {
+    const menu = tx.query.dailyMenus.findFirst({
+      where: eq(dailyMenus.id, menuId),
+    }).sync();
+    if (!menu) throw new Error('Меню не знайдено');
+    if (!menu.isConfirmed) throw new Error('Меню ще не підтверджено');
 
-  if (!menu) {
-    throw new Error('Меню не знайдено');
-  }
-
-  if (!menu.isConfirmed) {
-    throw new Error('Меню ще не підтверджено');
-  }
-
-  const needs = menu.stockDeducted ? await calculateMenuRequirement(menuId) : [];
-
-  if (menu.stockDeducted) {
-    for (const need of needs) {
-      if (need.totalGrossQuantity <= 0) {
-        continue;
+    if (menu.stockDeducted) {
+      const deductionReason = `Списання згідно меню від ${menu.date.toLocaleDateString('uk-UA')}`;
+      const deductions = getOutstandingMenuStockDeductions(tx, menuId, deductionReason);
+      if (deductions.length === 0) {
+        throw new Error('Не знайдено історію списання продуктів для цього меню');
       }
 
-      await restoreProductStock({
-        productId: need.productId,
-        quantity: need.totalGrossQuantity,
+      restoreMenuStockDeductions(tx, deductions, {
+        menuId,
         reason: `Повернення згідно скасування меню від ${menu.date.toLocaleDateString('uk-UA')}`,
         userId,
       });
     }
-  }
 
-  await db
-    .update(dailyMenus)
-    .set({
+    tx.update(dailyMenus).set({
       isConfirmed: false,
       confirmedAt: null,
       stockDeducted: false,
-    })
-    .where(eq(dailyMenus.id, menuId));
+    }).where(eq(dailyMenus.id, menuId)).run();
+  });
 
   return getMenuDetails(menuId);
 }

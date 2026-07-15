@@ -101,6 +101,27 @@ export const schemaMigrations: readonly SchemaMigration[] = [
       }
     },
   },
+  {
+    version: 5,
+    name: 'menu_stock_movement_links',
+    up(database) {
+      if (!tableExists(database, 'stock_movements')) {
+        throw new Error('Cannot migrate: stock_movements table is missing');
+      }
+      if (!columnExists(database, 'stock_movements', 'menu_id')) {
+        database.exec('ALTER TABLE stock_movements ADD COLUMN menu_id INTEGER');
+      }
+      if (!columnExists(database, 'stock_movements', 'reversal_of_movement_id')) {
+        database.exec('ALTER TABLE stock_movements ADD COLUMN reversal_of_movement_id INTEGER');
+      }
+      database.exec(`
+        CREATE INDEX IF NOT EXISTS stock_movements_menu_idx
+          ON stock_movements(menu_id, type);
+        CREATE INDEX IF NOT EXISTS stock_movements_reversal_idx
+          ON stock_movements(reversal_of_movement_id);
+      `);
+    },
+  },
 ];
 
 const assertMigrationSequence = (migrations: readonly SchemaMigration[]) => {

@@ -12,6 +12,7 @@ test('schema migrations apply once and record their version', () => {
     CREATE TABLE employees (id INTEGER PRIMARY KEY);
     CREATE TABLE kindergarten_settings (id INTEGER PRIMARY KEY);
     CREATE TABLE daily_menus (id INTEGER PRIMARY KEY, is_confirmed INTEGER DEFAULT 0);
+    CREATE TABLE stock_movements (id INTEGER PRIMARY KEY, type TEXT NOT NULL);
     INSERT INTO daily_menus (id, is_confirmed) VALUES (1, 1), (2, 0);
   `);
 
@@ -22,6 +23,7 @@ test('schema migrations apply once and record their version', () => {
   const settingsColumns = database.prepare('PRAGMA table_info(kindergarten_settings)').all() as Array<{ name: string }>;
   const menuColumns = database.prepare('PRAGMA table_info(daily_menus)').all() as Array<{ name: string }>;
   const menuRows = database.prepare('SELECT id, stock_deducted AS stockDeducted FROM daily_menus ORDER BY id').all();
+  const movementColumns = database.prepare('PRAGMA table_info(stock_movements)').all() as Array<{ name: string }>;
   const migrationRows = database.prepare('SELECT version, name FROM sadok_schema_migrations ORDER BY version').all();
 
   assert.ok(columns.some((column) => column.name === 'status'));
@@ -30,10 +32,13 @@ test('schema migrations apply once and record their version', () => {
     { version: 2, name: 'notification_center' },
     { version: 3, name: 'license_exact_expiry' },
     { version: 4, name: 'optional_inventory_control' },
+    { version: 5, name: 'menu_stock_movement_links' },
   ]);
   assert.ok(settingsColumns.some((column) => column.name === 'license_expires_at'));
   assert.ok(settingsColumns.some((column) => column.name === 'inventory_control_enabled'));
   assert.ok(menuColumns.some((column) => column.name === 'stock_deducted'));
+  assert.ok(movementColumns.some((column) => column.name === 'menu_id'));
+  assert.ok(movementColumns.some((column) => column.name === 'reversal_of_movement_id'));
   assert.deepEqual(menuRows, [
     { id: 1, stockDeducted: 1 },
     { id: 2, stockDeducted: 0 },
@@ -55,6 +60,12 @@ test('schema migrations accept databases already containing the target column', 
       is_confirmed INTEGER DEFAULT 0,
       stock_deducted INTEGER NOT NULL DEFAULT 0
     );
+    CREATE TABLE stock_movements (
+      id INTEGER PRIMARY KEY,
+      type TEXT NOT NULL,
+      menu_id INTEGER,
+      reversal_of_movement_id INTEGER
+    );
   `);
 
   runSchemaMigrations(database);
@@ -62,7 +73,7 @@ test('schema migrations accept databases already containing the target column', 
   const count = database.prepare('SELECT COUNT(*) AS count FROM sadok_schema_migrations').get() as {
     count: number;
   };
-  assert.equal(count.count, 4);
+  assert.equal(count.count, 5);
   database.close();
 });
 
@@ -121,7 +132,8 @@ test('unknown applied migration versions stop startup', () => {
     INSERT INTO sadok_schema_migrations VALUES (2, 'notification_center', 0);
     INSERT INTO sadok_schema_migrations VALUES (3, 'license_exact_expiry', 0);
     INSERT INTO sadok_schema_migrations VALUES (4, 'optional_inventory_control', 0);
-    INSERT INTO sadok_schema_migrations VALUES (5, 'unknown_future_migration', 0);
+    INSERT INTO sadok_schema_migrations VALUES (5, 'menu_stock_movement_links', 0);
+    INSERT INTO sadok_schema_migrations VALUES (6, 'unknown_future_migration', 0);
   `);
 
   assert.throws(() => runSchemaMigrations(database), /expected no additional migration/);

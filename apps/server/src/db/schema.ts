@@ -116,6 +116,8 @@ export const stockMovements = sqliteTable('stock_movements', {
   date: integer('date', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   reason: text('reason'),
   userId: integer('user_id').references(() => users.id),
+  menuId: integer('menu_id'),
+  reversalOfMovementId: integer('reversal_of_movement_id'),
 });
 
 export const recipes = sqliteTable('recipes', {
