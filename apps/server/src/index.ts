@@ -1,4 +1,18 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+
+const envCandidates = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../../../.env'),
+  path.resolve(__dirname, '../../../../.env'),
+];
+
+for (const envPath of envCandidates) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath, override: false });
+  }
+}
 
 import express from 'express';
 import multer from 'multer';

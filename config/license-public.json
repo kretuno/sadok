@@ -1,0 +1,5 @@
+{
+  "apiUrl": "https://activator-license-server.sadok-activator-eduard.workers.dev",
+  "issuer": "activator.local",
+  "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEACrjmj0ivf4/QmbTlSAKhtGY2HgRKjK/c5EuHkFpXnbE=\n-----END PUBLIC KEY-----"
+}

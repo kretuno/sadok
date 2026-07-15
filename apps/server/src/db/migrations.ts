@@ -68,6 +68,18 @@ export const schemaMigrations: readonly SchemaMigration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    name: 'license_exact_expiry',
+    up(database) {
+      if (!tableExists(database, 'kindergarten_settings')) {
+        throw new Error('Cannot migrate: kindergarten_settings table is missing');
+      }
+      if (!columnExists(database, 'kindergarten_settings', 'license_expires_at')) {
+        database.exec('ALTER TABLE kindergarten_settings ADD COLUMN license_expires_at INTEGER');
+      }
+    },
+  },
 ];
 
 const assertMigrationSequence = (migrations: readonly SchemaMigration[]) => {

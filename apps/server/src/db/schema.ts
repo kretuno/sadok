@@ -17,6 +17,7 @@ export const kindergartenSettings = sqliteTable('kindergarten_settings', {
   licenseType: text('license_type'), // 'annual', 'lifetime'
   installationDate: integer('installation_date', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   activatedAt: integer('activated_at', { mode: 'timestamp' }),
+  licenseExpiresAt: integer('license_expires_at', { mode: 'timestamp' }),
   backupTime: text('backup_time').notNull().default('03:00'),
   maxBackupsCount: integer('max_backups_count').notNull().default(7),
 });

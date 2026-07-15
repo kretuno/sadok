@@ -10,18 +10,19 @@
     "dev:client": "cd apps/client && npm run dev",
     "db:schema:push": "cd apps/server && npm run push",
     "db:init": "npm run db:schema:push && cd apps/server && npx tsx src/db/seed.ts",
+    "db:template": "node scripts/create-clean-template-db.js",
     "db:menu-test": "cd apps/server && npm run seed:menu-test",
     "db:menu-edge": "cd apps/server && npm run seed:menu-edge",
     "build:client": "cd apps/client && npm run build",
     "build:server": "cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js",
     "build": "npm run build:client && npm run build:server",
     "test": "npm --prefix apps/server test",
-    "dist:win": "npm run build && electron-builder --win nsis",
-    "dist:win:x64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=x64 && electron-builder --win nsis --x64",
-    "dist:win:ia32": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=ia32 && electron-builder --win nsis --ia32",
+    "dist:win": "npm run dist:win:x64",
+    "dist:win:x64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --platform=win32 --arch=x64 && electron-builder --win nsis --x64",
+    "dist:win:ia32": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --platform=win32 --arch=ia32 && electron-builder --win nsis --ia32",
     "dist:win:all": "npm run dist:win:x64 && npm run dist:win:ia32",
-    "dist:mac:arm64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=arm64 && electron-builder --mac dmg zip --arm64",
-    "dist:mac:x64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --arch=x64 && electron-builder --mac dmg zip --x64",
+    "dist:mac:arm64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --platform=darwin --arch=arm64 && electron-builder --mac dmg zip --arm64",
+    "dist:mac:x64": "npm run build:client && cd apps/server && npm run build && cd ../.. && node scripts/prepare-server-runtime.js --platform=darwin --arch=x64 && electron-builder --mac dmg zip --x64",
     "dist:mac:all": "npm run dist:mac:arm64 && npm run dist:mac:x64",
     "install:all": "npm install && cd apps/client && npm install && cd ../server && npm install",
     "clean:portable": "node scripts/clean-portable.js",
@@ -82,8 +83,12 @@
         "to": "server/package-lock.json"
       },
       {
-        "from": "apps/server/sqlite.db",
+        "from": "server-runtime/template/sqlite.db",
         "to": "server-template/sqlite.db"
+      },
+      {
+        "from": "config/license-public.json",
+        "to": "license-public.json"
       }
     ],
     "asarUnpack": [

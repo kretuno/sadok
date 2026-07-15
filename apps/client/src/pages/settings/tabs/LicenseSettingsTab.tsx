@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, Copy, CheckCircle } from 'lucide-react';
+import { Cpu, Copy, CheckCircle, RefreshCw, Wifi } from 'lucide-react';
 import api from '../../../api/axios';
 import { useSettings } from '../../../contexts/SettingsContext';
 
@@ -24,6 +24,7 @@ const LicenseSettingsTab: React.FC = () => {
   const [licenseKey, setLicenseKey] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [activating, setActivating] = useState<boolean>(false);
+  const [checking, setChecking] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -47,6 +48,34 @@ const LicenseSettingsTab: React.FC = () => {
 
     fetchMachineId();
   }, []);
+
+  const checkOnlineActivation = async (silent = false) => {
+    if (checking) return;
+    setChecking(true);
+    if (!silent) {
+      setError(null);
+      setSuccess(null);
+    }
+    try {
+      const response = await api.post('/settings/activation-status');
+      if (response.data.activated) {
+        setSuccess('Ліцензію отримано автоматично. Програму успішно активовано!');
+        await refreshSettings();
+      } else if (!silent) {
+        setSuccess(response.data.message || 'Запит ще очікує підтвердження.');
+      }
+    } catch (err: any) {
+      if (!silent) setError(err.response?.data?.message || 'Не вдалося перевірити онлайн-активацію');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    if (settings?.isActivated) return;
+    const timer = window.setInterval(() => void checkOnlineActivation(true), 30000);
+    return () => window.clearInterval(timer);
+  }, [settings?.isActivated]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(requestCode);
@@ -97,7 +126,7 @@ const LicenseSettingsTab: React.FC = () => {
                   settings.licenseType === 'monthly' ? 'Місячна' :
                   settings.licenseType === 'demo' ? 'Демонстраційна 🧪' : 'Річна'
                 }` 
-              : 'Керування ліцензійним ключем вашого закладу'}
+              : 'Керування ліцензією вашого закладу'}
           </p>
         </div>
       </div>
@@ -139,9 +168,9 @@ const LicenseSettingsTab: React.FC = () => {
               <Cpu size={20} className="text-warm-600" />
             </div>
             <div>
-              <h4 className="font-bold text-gray-800 mb-1">Код запиту (ID комп'ютера)</h4>
+              <h4 className="font-bold text-gray-800 mb-1">Код запиту на активацію</h4>
               <p className="text-sm text-gray-600 mb-4">
-                Скопіюйте та надішліть цей код після оплати ліцензії для отримання або оновлення ключа ліцензії.
+                Передайте цей короткий код постачальнику. Після підтвердження ліцензія завантажиться автоматично.
               </p>
 
               {loading ? (
@@ -162,8 +191,19 @@ const LicenseSettingsTab: React.FC = () => {
                   >
                     {copied ? <CheckCircle size={20} /> : <Copy size={20} />}
                   </button>
+                  <button
+                    onClick={() => void checkOnlineActivation(false)}
+                    disabled={checking}
+                    className="p-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 shadow-lg shadow-emerald-100"
+                    title="Перевірити активацію"
+                  >
+                    <RefreshCw size={20} className={checking ? 'animate-spin' : ''} />
+                  </button>
                 </div>
               )}
+              <div className="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-700">
+                <Wifi size={14} /> SADOK автоматично перевіряє підтвердження кожні 30 секунд
+              </div>
             </div>
           </div>
         </div>
@@ -181,9 +221,9 @@ const LicenseSettingsTab: React.FC = () => {
                <p className={`text-sm leading-relaxed ${
                  settings.isExpired ? 'text-red-700' : 'text-emerald-700'
                }`}>
-                 {settings.isExpired 
-                   ? 'Основні функції програми обмежено. Будь ласка, введіть новий ліцензійний ключ нижче для відновлення роботи.' 
-                   : 'Ваша копія програми «SADOK» працює у повнофункціональному режимі. Всі обмеження демо-версії знято.'}
+                 {settings.isExpired
+                  ? 'Основні функції програми обмежено. Будь ласка, введіть новий ключ активації нижче для відновлення роботи.'
+                  : 'Ваша копія програми «SADOK» працює у повнофункціональному режимі. Всі обмеження демо-версії знято.'}
                </p>
             </div>
 
@@ -201,17 +241,17 @@ const LicenseSettingsTab: React.FC = () => {
               </div>
             ) : (
               <div className={`p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border ${
-                settings.isExpired 
-                  ? 'bg-red-50 border-red-200 animate-shake' 
+                settings.isExpired
+                  ? 'bg-red-50 border-red-200 animate-shake'
                   : 'bg-blue-50 border-blue-100'
-              }`}>
+                }`}>
                 <div>
                   <h4 className={`font-bold ${settings.isExpired ? 'text-red-900' : 'text-blue-900'}`}>
                     {settings.isExpired ? 'Ліцензія прострочена' : 'Термін дії ліцензії'}
                   </h4>
                   <p className={`text-xs font-medium mt-1 ${settings.isExpired ? 'text-red-700' : 'text-blue-700'}`}>
-                    {settings.isExpired 
-                      ? 'Термін дії вашого ліцензійного ключа закінчився.' 
+                    {settings.isExpired
+                      ? 'Термін дії вашої ліцензії закінчився.'
                       : 'У вас активована тимчасова ліцензія. Після закінчення терміну знадобиться новий ключ активації.'}
                   </p>
                 </div>
@@ -231,46 +271,50 @@ const LicenseSettingsTab: React.FC = () => {
           </div>
         )}
 
-        {(!settings?.isActivated || settings?.isExpired) && (
-          <div className="pt-4 border-t border-gray-100">
-            <h4 className="font-bold text-gray-800 mb-4">
-              {settings?.isActivated ? 'Оновлення ліцензійного ключа' : 'Активація програми'}
-            </h4>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-gray-500 ml-1">Ключ активації</label>
-                <input 
-                  type="text" 
-                  value={licenseKey}
-                  onChange={(e) => setLicenseKey(e.target.value)}
-                  placeholder="Введіть отриманий ключ" 
-                  className="ui-input w-full bg-gray-50 border-gray-200 focus:bg-white text-lg font-mono uppercase tracking-widest"
-                />
-              </div>
-              
-              {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 animate-shake">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl text-sm font-medium border border-emerald-100 animate-fade-in">
-                  {success}
-                </div>
-              )}
-
-              <button 
-                onClick={handleActivate}
-                disabled={activating || !licenseKey.trim()} 
-                className="ui-button-primary bg-warm-600 px-8 py-3 w-fit flex items-center gap-2 group"
-              >
-                {activating ? 'Активація...' : 'Активувати програму'}
-                {!activating && <CheckCircle size={18} className="group-hover:scale-125 transition-transform" /> }
-              </button>
+        <div className="pt-4 border-t border-gray-100">
+          <h4 className="font-bold text-gray-800 mb-2">
+            {settings?.isActivated ? 'Оновлення ліцензії' : 'Ручна активація'}
+          </h4>
+          <p className="text-sm text-gray-500 mb-4">
+            {settings?.isActivated
+              ? 'Введіть новий короткий ключ або службовий токен, щоб продовжити чи замінити поточну ліцензію.'
+              : 'Якщо автоматична активація недоступна, введіть короткий ключ, отриманий від постачальника.'}
+          </p>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-gray-500 ml-1">Ключ активації</label>
+              <textarea
+                value={licenseKey}
+                onChange={(e) => setLicenseKey(e.target.value)}
+                placeholder="Наприклад: 8KFM-27PA-QL9X"
+                rows={2}
+                spellCheck={false}
+                className="ui-input w-full bg-gray-50 border-gray-200 focus:bg-white text-sm font-mono tracking-wider resize-y min-h-[72px]"
+              />
             </div>
+
+            {error && (
+              <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 animate-shake">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl text-sm font-medium border border-emerald-100 animate-fade-in">
+                {success}
+              </div>
+            )}
+
+            <button
+              onClick={handleActivate}
+              disabled={activating || !licenseKey.trim()}
+              className="ui-button-primary bg-warm-600 px-8 py-3 w-fit flex items-center gap-2 group"
+            >
+              {activating ? 'Активація...' : (settings?.isActivated ? 'Оновити ліцензію' : 'Активувати програму')}
+              {!activating && <CheckCircle size={18} className="group-hover:scale-125 transition-transform" /> }
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

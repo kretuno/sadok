@@ -13,7 +13,8 @@ import {
   restoreBackupArchive,
   restoreBackup,
   getMachineId,
-  activateApp
+  activateApp,
+  checkRemoteActivation
 } from '../controllers/system';
 import { authenticateToken, authorizeRoles } from '../middleware/auth';
 
@@ -31,6 +32,7 @@ const upload = multer({
 router.get('/', getSettings);
 router.put('/', authenticateToken, authorizeRoles('admin'), updateSettings);
 router.post('/activate', authenticateToken, authorizeRoles('admin'), activateApp);
+router.post('/activation-status', authenticateToken, authorizeRoles('admin'), checkRemoteActivation);
 router.get('/hwid', getMachineId);
 router.get('/backup/download', authenticateToken, authorizeRoles('admin'), downloadBackup);
 router.get('/backup/list', authenticateToken, authorizeRoles('admin'), getBackupList);

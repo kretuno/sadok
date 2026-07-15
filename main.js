@@ -219,6 +219,24 @@ function getServerEntryPath() {
   return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
 }
 
+function readLicensePublicConfig() {
+  const candidates = [
+    path.join(process.resourcesPath || __dirname, 'license-public.json'),
+    path.join(__dirname, 'config', 'license-public.json'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) {
+        return JSON.parse(fs.readFileSync(candidate, 'utf8'));
+      }
+    } catch (error) {
+      console.error('[Electron] Failed to read public license config:', error);
+    }
+  }
+  return {};
+}
+
 function registerIpcHandlers() {
   const toPublicConfig = ({ role, serverUrl }) => ({ role, serverUrl });
 
@@ -295,6 +313,7 @@ function startServer() {
   const serverPath = getServerEntryPath();
   const serverCwd = process.resourcesPath || __dirname;
   const jwtSecret = config.jwtSecret;
+  const licenseConfig = readLicensePublicConfig();
   
   serverProcess = spawn(process.execPath, ['--max-old-space-size=128', serverPath], {
     cwd: serverCwd,
@@ -304,6 +323,9 @@ function startServer() {
       PORT: '3000',
       JWT_SECRET: jwtSecret,
       SADOK_DATA_DIR: path.join(app.getPath('userData'), 'server-data'),
+      ACTIVATOR_API_URL: process.env.ACTIVATOR_API_URL || licenseConfig.apiUrl || '',
+      LICENSE_ISSUER: process.env.LICENSE_ISSUER || licenseConfig.issuer || '',
+      LICENSE_PUBLIC_KEY: process.env.LICENSE_PUBLIC_KEY || licenseConfig.publicKey || '',
     },
     windowsHide: true,
   });

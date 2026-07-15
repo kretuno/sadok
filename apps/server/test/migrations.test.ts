@@ -8,32 +8,41 @@ import {
 
 test('schema migrations apply once and record their version', () => {
   const database = new Database(':memory:');
-  database.exec('CREATE TABLE employees (id INTEGER PRIMARY KEY)');
+  database.exec(`
+    CREATE TABLE employees (id INTEGER PRIMARY KEY);
+    CREATE TABLE kindergarten_settings (id INTEGER PRIMARY KEY);
+  `);
 
   runSchemaMigrations(database);
   runSchemaMigrations(database);
 
   const columns = database.prepare('PRAGMA table_info(employees)').all() as Array<{ name: string }>;
-  const migrationRows = database.prepare('SELECT version, name FROM sadok_schema_migrations').all();
+  const settingsColumns = database.prepare('PRAGMA table_info(kindergarten_settings)').all() as Array<{ name: string }>;
+  const migrationRows = database.prepare('SELECT version, name FROM sadok_schema_migrations ORDER BY version').all();
 
   assert.ok(columns.some((column) => column.name === 'status'));
   assert.deepEqual(migrationRows, [
     { version: 1, name: 'employees_status' },
     { version: 2, name: 'notification_center' },
+    { version: 3, name: 'license_exact_expiry' },
   ]);
+  assert.ok(settingsColumns.some((column) => column.name === 'license_expires_at'));
   database.close();
 });
 
 test('schema migrations accept databases already containing the target column', () => {
   const database = new Database(':memory:');
-  database.exec("CREATE TABLE employees (id INTEGER PRIMARY KEY, status TEXT NOT NULL DEFAULT 'working')");
+  database.exec(`
+    CREATE TABLE employees (id INTEGER PRIMARY KEY, status TEXT NOT NULL DEFAULT 'working');
+    CREATE TABLE kindergarten_settings (id INTEGER PRIMARY KEY, license_expires_at INTEGER);
+  `);
 
   runSchemaMigrations(database);
 
   const count = database.prepare('SELECT COUNT(*) AS count FROM sadok_schema_migrations').get() as {
     count: number;
   };
-  assert.equal(count.count, 2);
+  assert.equal(count.count, 3);
   database.close();
 });
 
@@ -90,7 +99,8 @@ test('unknown applied migration versions stop startup', () => {
     );
     INSERT INTO sadok_schema_migrations VALUES (1, 'employees_status', 0);
     INSERT INTO sadok_schema_migrations VALUES (2, 'notification_center', 0);
-    INSERT INTO sadok_schema_migrations VALUES (3, 'unknown_future_migration', 0);
+    INSERT INTO sadok_schema_migrations VALUES (3, 'license_exact_expiry', 0);
+    INSERT INTO sadok_schema_migrations VALUES (4, 'unknown_future_migration', 0);
   `);
 
   assert.throws(() => runSchemaMigrations(database), /expected no additional migration/);

@@ -7,10 +7,19 @@ const rootDir = path.resolve(__dirname, '..');
 const serverDir = path.join(rootDir, 'apps', 'server');
 const runtimeDir = path.join(rootDir, 'server-runtime');
 const electronVersion = require(path.join(rootDir, 'package.json')).devDependencies.electron.replace(/^[^\d]*/, '');
+const targetPlatformArg = process.argv.find((arg) => arg.startsWith('--platform='));
 const targetArchArg = process.argv.find((arg) => arg.startsWith('--arch='));
+const targetPlatform = targetPlatformArg
+  ? targetPlatformArg.slice('--platform='.length)
+  : process.env.npm_config_platform || process.platform;
 const targetArch = targetArchArg
   ? targetArchArg.slice('--arch='.length)
   : process.env.npm_config_arch || process.arch;
+
+if (!['win32', 'darwin'].includes(targetPlatform)) {
+  console.error(`[prepare-server-runtime] Unsupported platform: ${targetPlatform}`);
+  process.exit(1);
+}
 
 if (!['x64', 'ia32', 'arm64'].includes(targetArch)) {
   console.error(`[prepare-server-runtime] Unsupported architecture: ${targetArch}`);
@@ -27,7 +36,7 @@ fs.copyFileSync(path.join(serverDir, 'package-lock.json'), path.join(runtimeDir,
 const npmCommand = process.platform === 'win32'
   ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'cmd.exe')
   : 'npm';
-const npmInstallFlags = targetArch === process.arch
+const npmInstallFlags = targetPlatform === process.platform && targetArch === process.arch
   ? 'install --omit=dev'
   : 'install --omit=dev --ignore-scripts';
 const npmArgs = process.platform === 'win32'
@@ -35,6 +44,29 @@ const npmArgs = process.platform === 'win32'
   : npmInstallFlags.split(' ');
 
 async function rebuildNativeModules() {
+  if (targetPlatform !== process.platform) {
+    const moduleDir = path.join(runtimeDir, 'node_modules', 'better-sqlite3');
+    const prebuildInstall = path.join(runtimeDir, 'node_modules', '.bin', 'prebuild-install');
+    execFileSync(prebuildInstall, [
+      '--runtime', 'electron',
+      '--target', electronVersion,
+      '--platform', targetPlatform,
+      '--arch', targetArch,
+      '--force',
+    ], {
+      cwd: moduleDir,
+      stdio: 'inherit',
+    });
+
+    const binaryPath = path.join(moduleDir, 'build', 'Release', 'better_sqlite3.node');
+    const magic = fs.readFileSync(binaryPath).subarray(0, 2).toString('ascii');
+    if (targetPlatform === 'win32' && magic !== 'MZ') {
+      throw new Error(`Invalid Windows native module: ${binaryPath}`);
+    }
+    console.error(`Installed better-sqlite3 prebuild for ${targetPlatform}-${targetArch}`);
+    return;
+  }
+
   const originalRealpath = fs.promises.realpath.bind(fs.promises);
 
   fs.promises.realpath = async (targetPath, options) => {
@@ -77,12 +109,13 @@ async function rebuildNativeModules() {
 }
 
 async function main() {
-  console.error(`[prepare-server-runtime] Preparing server runtime for ${targetArch}`);
+  console.error(`[prepare-server-runtime] Preparing server runtime for ${targetPlatform}-${targetArch}`);
   execFileSync(npmCommand, npmArgs, {
     cwd: runtimeDir,
     stdio: 'inherit',
     env: {
       ...process.env,
+      npm_config_platform: targetPlatform,
       npm_config_arch: targetArch,
       npm_config_target_arch: targetArch,
     },
@@ -91,6 +124,11 @@ async function main() {
   console.error('Searching dependency tree');
   await rebuildNativeModules();
   console.error('Rebuild complete');
+
+  execFileSync(process.execPath, [path.join(rootDir, 'scripts', 'create-clean-template-db.js')], {
+    cwd: rootDir,
+    stdio: 'inherit',
+  });
 
   console.log(`[prepare-server-runtime] Server runtime prepared at ${runtimeDir}`);
 }
