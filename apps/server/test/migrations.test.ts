@@ -11,6 +11,8 @@ test('schema migrations apply once and record their version', () => {
   database.exec(`
     CREATE TABLE employees (id INTEGER PRIMARY KEY);
     CREATE TABLE kindergarten_settings (id INTEGER PRIMARY KEY);
+    CREATE TABLE daily_menus (id INTEGER PRIMARY KEY, is_confirmed INTEGER DEFAULT 0);
+    INSERT INTO daily_menus (id, is_confirmed) VALUES (1, 1), (2, 0);
   `);
 
   runSchemaMigrations(database);
@@ -18,6 +20,8 @@ test('schema migrations apply once and record their version', () => {
 
   const columns = database.prepare('PRAGMA table_info(employees)').all() as Array<{ name: string }>;
   const settingsColumns = database.prepare('PRAGMA table_info(kindergarten_settings)').all() as Array<{ name: string }>;
+  const menuColumns = database.prepare('PRAGMA table_info(daily_menus)').all() as Array<{ name: string }>;
+  const menuRows = database.prepare('SELECT id, stock_deducted AS stockDeducted FROM daily_menus ORDER BY id').all();
   const migrationRows = database.prepare('SELECT version, name FROM sadok_schema_migrations ORDER BY version').all();
 
   assert.ok(columns.some((column) => column.name === 'status'));
@@ -25,8 +29,15 @@ test('schema migrations apply once and record their version', () => {
     { version: 1, name: 'employees_status' },
     { version: 2, name: 'notification_center' },
     { version: 3, name: 'license_exact_expiry' },
+    { version: 4, name: 'optional_inventory_control' },
   ]);
   assert.ok(settingsColumns.some((column) => column.name === 'license_expires_at'));
+  assert.ok(settingsColumns.some((column) => column.name === 'inventory_control_enabled'));
+  assert.ok(menuColumns.some((column) => column.name === 'stock_deducted'));
+  assert.deepEqual(menuRows, [
+    { id: 1, stockDeducted: 1 },
+    { id: 2, stockDeducted: 0 },
+  ]);
   database.close();
 });
 
@@ -34,7 +45,16 @@ test('schema migrations accept databases already containing the target column', 
   const database = new Database(':memory:');
   database.exec(`
     CREATE TABLE employees (id INTEGER PRIMARY KEY, status TEXT NOT NULL DEFAULT 'working');
-    CREATE TABLE kindergarten_settings (id INTEGER PRIMARY KEY, license_expires_at INTEGER);
+    CREATE TABLE kindergarten_settings (
+      id INTEGER PRIMARY KEY,
+      license_expires_at INTEGER,
+      inventory_control_enabled INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE daily_menus (
+      id INTEGER PRIMARY KEY,
+      is_confirmed INTEGER DEFAULT 0,
+      stock_deducted INTEGER NOT NULL DEFAULT 0
+    );
   `);
 
   runSchemaMigrations(database);
@@ -42,7 +62,7 @@ test('schema migrations accept databases already containing the target column', 
   const count = database.prepare('SELECT COUNT(*) AS count FROM sadok_schema_migrations').get() as {
     count: number;
   };
-  assert.equal(count.count, 3);
+  assert.equal(count.count, 4);
   database.close();
 });
 
@@ -100,7 +120,8 @@ test('unknown applied migration versions stop startup', () => {
     INSERT INTO sadok_schema_migrations VALUES (1, 'employees_status', 0);
     INSERT INTO sadok_schema_migrations VALUES (2, 'notification_center', 0);
     INSERT INTO sadok_schema_migrations VALUES (3, 'license_exact_expiry', 0);
-    INSERT INTO sadok_schema_migrations VALUES (4, 'unknown_future_migration', 0);
+    INSERT INTO sadok_schema_migrations VALUES (4, 'optional_inventory_control', 0);
+    INSERT INTO sadok_schema_migrations VALUES (5, 'unknown_future_migration', 0);
   `);
 
   assert.throws(() => runSchemaMigrations(database), /expected no additional migration/);

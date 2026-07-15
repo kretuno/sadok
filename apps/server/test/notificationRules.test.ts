@@ -82,6 +82,10 @@ test('menu rules distinguish missing and unconfirmed menus', () => {
     buildMenuNotification('2026-07-14', 'сьогодні', { id: 1, isConfirmed: false }, 'high')?.type,
     'menu_unconfirmed'
   );
+  assert.match(
+    buildMenuNotification('2026-07-14', 'сьогодні', { id: 1, isConfirmed: false }, 'high', false)?.message || '',
+    /підтвердьте меню на цей день/
+  );
 });
 
 test('backup warning starts after two days and escalates after a week', () => {

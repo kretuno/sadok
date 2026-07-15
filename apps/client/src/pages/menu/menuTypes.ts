@@ -75,6 +75,7 @@ export interface DailyMenuSummary {
   targetPrice0_4?: number | null;
   targetPrice5_7?: number | null;
   isConfirmed: boolean;
+  stockDeducted: boolean;
   itemsCount: number;
   hasAdjustments: boolean;
   status: 'empty' | 'draft' | 'adjusted' | 'confirmed';
@@ -132,6 +133,7 @@ export interface MenuAnalysis {
   targetPrice0_4?: number | null;
   targetPrice5_7?: number | null;
   isConfirmed: boolean;
+  stockDeducted: boolean;
   status: 'empty' | 'draft' | 'adjusted' | 'confirmed';
   hasAdjustments: boolean;
   itemsCount: number;

@@ -13,6 +13,7 @@ import {
 import { dataDir } from '../paths';
 import { getInventoryOverview } from './stock';
 import { hasPermission, type PermissionModule } from './permissions';
+import { getInventoryControlEnabled } from './inventoryControl';
 import {
   buildBackupNotification,
   buildLowStockNotification,
@@ -79,8 +80,9 @@ const collectCandidates = async (now: Date): Promise<NotificationCandidate[]> =>
   const tomorrowEnd = new Date(tomorrow);
   tomorrowEnd.setHours(23, 59, 59, 999);
 
+  const inventoryControlEnabled = await getInventoryControlEnabled();
   const [stock, medicationRows, vaccinationRows, menuRows] = await Promise.all([
-    getInventoryOverview(),
+    inventoryControlEnabled ? getInventoryOverview() : Promise.resolve([]),
     db.select().from(medications),
     db.select({
       id: vaccinations.id,
@@ -126,7 +128,13 @@ const collectCandidates = async (now: Date): Promise<NotificationCandidate[]> =>
     const day = date.getDay();
     if (day === 0 || day === 6) return;
     const key = dateKey(date);
-    const candidate = buildMenuNotification(key, label, menusByDate.get(key), severity);
+    const candidate = buildMenuNotification(
+      key,
+      label,
+      menusByDate.get(key),
+      severity,
+      inventoryControlEnabled
+    );
     if (candidate) candidates.push(candidate);
   });
 

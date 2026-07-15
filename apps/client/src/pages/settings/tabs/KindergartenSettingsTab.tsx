@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../../contexts/SettingsContext';
-import { Save, CheckCircle } from 'lucide-react';
+import { Save, CheckCircle, PackageCheck } from 'lucide-react';
 import api from '../../../api/axios';
 
 const KindergartenSettingsTab: React.FC = () => {
@@ -16,6 +16,7 @@ const KindergartenSettingsTab: React.FC = () => {
     storekeeperName: '',
     supplyManagerName: '',
     showQuotes: true,
+    inventoryControlEnabled: true,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -34,6 +35,7 @@ const KindergartenSettingsTab: React.FC = () => {
         storekeeperName: settings.storekeeperName || '',
         supplyManagerName: settings.supplyManagerName || '',
         showQuotes: settings.showQuotes ?? true,
+        inventoryControlEnabled: settings.inventoryControlEnabled ?? true,
       });
     }
   }, [settings]);
@@ -143,6 +145,40 @@ const KindergartenSettingsTab: React.FC = () => {
                     <span className="text-[10px] text-gray-500">Надихаючі фрази про виховання дітей на головному екрані</span>
                   </div>
                </label>
+            </div>
+
+            <div className="border-t pt-4">
+              <label className="flex cursor-pointer items-start gap-3 group">
+                <div className="relative mt-0.5 shrink-0">
+                  <input
+                    type="checkbox"
+                    name="inventoryControlEnabled"
+                    checked={formData.inventoryControlEnabled}
+                    onChange={(event) => {
+                      setFormData((current) => ({
+                        ...current,
+                        inventoryControlEnabled: event.target.checked,
+                      }));
+                      setSaved(false);
+                      setErrorMessage('');
+                    }}
+                    className="sr-only"
+                  />
+                  <div className={`h-6 w-10 rounded-full transition-colors ${formData.inventoryControlEnabled ? 'bg-warm-500' : 'bg-gray-300'}`} />
+                  <div className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${formData.inventoryControlEnabled ? 'translate-x-4' : ''}`} />
+                </div>
+                <div className="min-w-0">
+                  <span className="flex items-center gap-2 font-bold text-gray-700">
+                    <PackageCheck size={17} className="shrink-0 text-warm-500" />
+                    Контроль залишків продуктів
+                  </span>
+                  <span className="mt-1 block text-xs leading-5 text-gray-500">
+                    {formData.inventoryControlEnabled
+                      ? 'Підтвердження меню перевіряє залишки та списує продукти зі складу.'
+                      : 'Меню підтверджується без перевірки та без списання продуктів зі складу.'}
+                  </span>
+                </div>
+              </label>
             </div>
           </div>
         </div>

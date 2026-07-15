@@ -80,6 +80,27 @@ export const schemaMigrations: readonly SchemaMigration[] = [
       }
     },
   },
+  {
+    version: 4,
+    name: 'optional_inventory_control',
+    up(database) {
+      if (!tableExists(database, 'kindergarten_settings')) {
+        throw new Error('Cannot migrate: kindergarten_settings table is missing');
+      }
+      if (!tableExists(database, 'daily_menus')) {
+        throw new Error('Cannot migrate: daily_menus table is missing');
+      }
+      if (!columnExists(database, 'kindergarten_settings', 'inventory_control_enabled')) {
+        database.exec(
+          'ALTER TABLE kindergarten_settings ADD COLUMN inventory_control_enabled INTEGER NOT NULL DEFAULT 1'
+        );
+      }
+      if (!columnExists(database, 'daily_menus', 'stock_deducted')) {
+        database.exec('ALTER TABLE daily_menus ADD COLUMN stock_deducted INTEGER NOT NULL DEFAULT 0');
+        database.exec('UPDATE daily_menus SET stock_deducted = 1 WHERE is_confirmed = 1');
+      }
+    },
+  },
 ];
 
 const assertMigrationSequence = (migrations: readonly SchemaMigration[]) => {

@@ -13,6 +13,7 @@ export interface KindergartenSettings {
   storekeeperName: string;
   supplyManagerName: string;
   showQuotes: boolean;
+  inventoryControlEnabled: boolean;
   licenseType?: 'lifetime' | 'halfyear' | 'quarterly' | 'monthly' | 'demo' | 'yearly' | string;
   daysRemaining?: number;
   isActivated?: boolean;

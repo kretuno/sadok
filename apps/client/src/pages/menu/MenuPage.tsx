@@ -57,6 +57,7 @@ const mealTypes = [
 
 const MenuPage: React.FC = () => {
   const { settings } = useSettings();
+  const inventoryControlEnabled = settings?.inventoryControlEnabled !== false;
   const { can } = useAuth();
   const canPrintMenu = can('menu', 'print');
   const [activeTab, setActiveTab] = useState<Phase4Tab>('dailyMenu');
@@ -928,7 +929,9 @@ const MenuPage: React.FC = () => {
     setConfirmAction({
       type: 'confirmMenu',
       title: 'Підтвердження меню',
-      message: 'Підтвердити меню на цей день? Це спише продукти зі складу та зафіксує денний документ.',
+      message: inventoryControlEnabled
+        ? 'Підтвердити меню на цей день? Це спише продукти зі складу та зафіксує денний документ.'
+        : 'Підтвердити меню на цей день? Документ буде зафіксовано без перевірки залишків і без списання зі складу.',
       confirmLabel: 'Підтвердити',
       tone: 'emerald',
     });
@@ -946,7 +949,9 @@ const MenuPage: React.FC = () => {
 
       await api.post(`/menus/${currentMenuId}/confirm`);
       setMissingStockItems([]);
-      setSuccess('Меню підтверджено, списання виконано');
+      setSuccess(inventoryControlEnabled
+        ? 'Меню підтверджено, списання виконано'
+        : 'Меню підтверджено без списання продуктів зі складу');
       await loadCurrentMenu();
       await loadWeekMenus();
     } catch (confirmError: any) {
@@ -985,7 +990,9 @@ const MenuPage: React.FC = () => {
     setConfirmAction({
       type: 'cancelConfirmation',
       title: 'Скасування підтвердження',
-      message: 'Скасувати підтвердження меню, повернути продукти на склад і відкрити день для редагування?',
+      message: menuAnalysis?.stockDeducted
+        ? 'Скасувати підтвердження меню, повернути продукти на склад і відкрити день для редагування?'
+        : 'Скасувати підтвердження меню та відкрити день для редагування? Склад не змінюватиметься.',
       confirmLabel: 'Скасувати підтвердження',
       tone: 'red',
     });
@@ -994,10 +1001,13 @@ const MenuPage: React.FC = () => {
   const executeCancelConfirmation = async () => {
     setSaving(true);
     setError(null);
+    const stockWasDeducted = Boolean(menuAnalysis?.stockDeducted);
 
     try {
       await api.post(`/menus/${currentMenuId}/cancel-confirmation`);
-      setSuccess('Підтвердження меню скасовано, продукти повернуто на склад');
+      setSuccess(stockWasDeducted
+        ? 'Підтвердження меню скасовано, продукти повернуто на склад'
+        : 'Підтвердження меню скасовано без змін на складі');
       await loadCurrentMenu();
       await loadWeekMenus();
       await loadBootstrapData();
@@ -1491,6 +1501,17 @@ const MenuPage: React.FC = () => {
       {activeTab === 'dailyMenu' ? (
         <div className="grid gap-6 2xl:grid-cols-[1.35fr_420px]">
           <div className="space-y-6">
+            {!inventoryControlEnabled && (
+              <div className="flex items-start gap-3 border-y border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-bold">Контроль залишків вимкнено</div>
+                  <div className="mt-0.5 text-xs leading-5 text-sky-700">
+                    Підтвердження меню не перевірятиме і не змінюватиме кількість продуктів на складі.
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="rounded-3xl border border-warm-100 bg-white p-5 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">

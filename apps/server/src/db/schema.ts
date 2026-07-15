@@ -13,6 +13,7 @@ export const kindergartenSettings = sqliteTable('kindergarten_settings', {
   storekeeperName: text('storekeeper_name').default('ПІБ Комірника (Кладовщика)'),
   supplyManagerName: text('supply_manager_name').default('ПІБ Завгоспа'),
   showQuotes: integer('show_quotes', { mode: 'boolean' }).default(true),
+  inventoryControlEnabled: integer('inventory_control_enabled', { mode: 'boolean' }).notNull().default(true),
   licenseKey: text('license_key'),
   licenseType: text('license_type'), // 'annual', 'lifetime'
   installationDate: integer('installation_date', { mode: 'timestamp' }).$defaultFn(() => new Date()),
@@ -147,6 +148,7 @@ export const dailyMenus = sqliteTable('daily_menus', {
   targetPrice5_7: real('target_price_5_7'),
   isConfirmed: integer('is_confirmed', { mode: 'boolean' }).default(false),
   confirmedAt: integer('confirmed_at', { mode: 'timestamp' }),
+  stockDeducted: integer('stock_deducted', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const menuItemRecipes = sqliteTable('menu_item_recipes', {

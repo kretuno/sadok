@@ -271,6 +271,14 @@ export const getSettings = async (req: Request, res: Response) => {
 export const updateSettings = async (req: Request, res: Response) => {
   try {
     const data = req.body;
+
+    if (
+      !data ||
+      typeof data !== 'object' ||
+      ('inventoryControlEnabled' in data && typeof data.inventoryControlEnabled !== 'boolean')
+    ) {
+      return res.status(400).json({ message: 'Некоректні налаштування контролю складу' });
+    }
     
     // Перевіряємо чи існує
     const existing = await db.select().from(kindergartenSettings).where(eq(kindergartenSettings.id, 1)).limit(1);

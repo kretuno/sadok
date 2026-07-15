@@ -10,6 +10,7 @@ import {
   recipes,
 } from '../db/schema';
 import { adjustProductStock, restoreProductStock } from './stock';
+import { getInventoryControlEnabled } from './inventoryControl';
 import {
   MenuStockShortageError,
   type DailyMenuInput,
@@ -416,6 +417,7 @@ async function buildMenuAnalysis(
     targetPrice5_7?: number | null;
     isConfirmed: boolean;
     confirmedAt?: Date | null;
+    stockDeducted?: boolean | null;
   },
   items: MenuAnalysisItemSource[],
   ingredientLoader: (
@@ -501,6 +503,7 @@ async function buildMenuAnalysis(
   return {
     ...menu,
     isConfirmed: Boolean(menu.isConfirmed),
+    stockDeducted: Boolean(menu.stockDeducted),
     status,
     hasAdjustments,
     itemsCount: detailedItems.length,
@@ -843,20 +846,26 @@ export async function confirmMenu(menuId: number, userId?: number) {
     throw new Error('Меню вже підтверджено');
   }
 
-  const needs = await calculateMenuRequirement(menuId);
-  await validateStockAvailability(needs);
+  const inventoryControlEnabled = await getInventoryControlEnabled();
+  const needs = inventoryControlEnabled ? await calculateMenuRequirement(menuId) : [];
 
-  for (const need of needs) {
-    if (need.totalGrossQuantity <= 0) {
-      continue;
+  if (inventoryControlEnabled) {
+    await validateStockAvailability(needs);
+  }
+
+  if (inventoryControlEnabled) {
+    for (const need of needs) {
+      if (need.totalGrossQuantity <= 0) {
+        continue;
+      }
+
+      await adjustProductStock({
+        productId: need.productId,
+        quantity: need.totalGrossQuantity,
+        reason: `Списання згідно меню від ${menu.date.toLocaleDateString('uk-UA')}`,
+        userId,
+      });
     }
-
-    await adjustProductStock({
-      productId: need.productId,
-      quantity: need.totalGrossQuantity,
-      reason: `Списання згідно меню від ${menu.date.toLocaleDateString('uk-UA')}`,
-      userId,
-    });
   }
 
   await db
@@ -864,6 +873,7 @@ export async function confirmMenu(menuId: number, userId?: number) {
     .set({
       isConfirmed: true,
       confirmedAt: new Date(),
+      stockDeducted: inventoryControlEnabled && needs.some((need) => need.totalGrossQuantity > 0),
     })
     .where(eq(dailyMenus.id, menuId));
 
@@ -883,19 +893,21 @@ export async function cancelMenuConfirmation(menuId: number, userId?: number) {
     throw new Error('Меню ще не підтверджено');
   }
 
-  const needs = await calculateMenuRequirement(menuId);
+  const needs = menu.stockDeducted ? await calculateMenuRequirement(menuId) : [];
 
-  for (const need of needs) {
-    if (need.totalGrossQuantity <= 0) {
-      continue;
+  if (menu.stockDeducted) {
+    for (const need of needs) {
+      if (need.totalGrossQuantity <= 0) {
+        continue;
+      }
+
+      await restoreProductStock({
+        productId: need.productId,
+        quantity: need.totalGrossQuantity,
+        reason: `Повернення згідно скасування меню від ${menu.date.toLocaleDateString('uk-UA')}`,
+        userId,
+      });
     }
-
-    await restoreProductStock({
-      productId: need.productId,
-      quantity: need.totalGrossQuantity,
-      reason: `Повернення згідно скасування меню від ${menu.date.toLocaleDateString('uk-UA')}`,
-      userId,
-    });
   }
 
   await db
@@ -903,6 +915,7 @@ export async function cancelMenuConfirmation(menuId: number, userId?: number) {
     .set({
       isConfirmed: false,
       confirmedAt: null,
+      stockDeducted: false,
     })
     .where(eq(dailyMenus.id, menuId));
 

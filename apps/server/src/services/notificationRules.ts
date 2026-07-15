@@ -45,7 +45,8 @@ export const buildMenuNotification = (
   dateKey: string,
   label: string,
   menu: { id: number; isConfirmed: boolean | null } | undefined,
-  severity: NotificationSeverity
+  severity: NotificationSeverity,
+  inventoryControlEnabled = true
 ): NotificationCandidate | null => {
   if (menu?.isConfirmed) return null;
 
@@ -56,8 +57,12 @@ export const buildMenuNotification = (
     severity,
     title: menu ? `Меню на ${label} не підтверджено` : `Немає меню на ${label}`,
     message: menu
-      ? 'Перевірте розрахунок і підтвердьте меню для списання продуктів.'
-      : 'Створіть меню, щоб кухня та склад мали актуальний план.',
+      ? inventoryControlEnabled
+        ? 'Перевірте розрахунок і підтвердьте меню для списання продуктів.'
+        : 'Перевірте розрахунок і підтвердьте меню на цей день.'
+      : inventoryControlEnabled
+        ? 'Створіть меню, щоб кухня та склад мали актуальний план.'
+        : 'Створіть меню, щоб кухня мала актуальний план на день.',
     actionPath: '/menu',
     entityType: 'menu',
     entityId: menu?.id,

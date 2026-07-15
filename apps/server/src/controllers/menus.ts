@@ -106,6 +106,7 @@ export const confirmMenuHandler = async (req: AuthRequest, res: Response) => {
         date: data.date,
         isConfirmed: data.isConfirmed,
         confirmedAt: data.confirmedAt,
+        stockDeducted: data.stockDeducted,
       },
       ipAddress: getClientIp(req),
     });
@@ -140,6 +141,7 @@ export const cancelMenuConfirmationHandler = async (req: AuthRequest, res: Respo
         date: data.date,
         isConfirmed: data.isConfirmed,
         confirmedAt: data.confirmedAt,
+        stockDeducted: data.stockDeducted,
       },
       ipAddress: getClientIp(req),
     });
