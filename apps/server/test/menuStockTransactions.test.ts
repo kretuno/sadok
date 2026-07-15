@@ -9,7 +9,7 @@ import {
   deductProductStock,
   getOutstandingMenuStockDeductions,
   restoreMenuStockDeductions,
-} from '../src/services/stock';
+} from '../src/services/stockTransactions';
 
 const createStockDatabase = () => {
   const sqlite = new Database(':memory:');

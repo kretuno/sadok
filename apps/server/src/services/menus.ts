@@ -13,7 +13,7 @@ import {
   deductProductStock,
   getOutstandingMenuStockDeductions,
   restoreMenuStockDeductions,
-} from './stock';
+} from './stockTransactions';
 import { getInventoryControlEnabled } from './inventoryControl';
 import {
   MenuStockShortageError,
