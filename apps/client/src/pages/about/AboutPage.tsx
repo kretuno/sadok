@@ -1,15 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Code, Mail, Phone, User, ExternalLink, ShieldCheck, Heart, RefreshCw, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
+import { Code, Mail, Phone, User, ExternalLink, ShieldCheck, Heart, RefreshCw, AlertCircle, CheckCircle2, Sparkles, Send, Loader2 } from 'lucide-react';
 import ukraineCoatOfArms from '../../assets/ukraine-coat-of-arms.svg';
 import { useSettings } from '../../contexts/SettingsContext';
+import api from '../../api/axios';
+import Modal from '../../components/ui/Modal';
+import { useNavigate } from 'react-router-dom';
 
 const AboutPage: React.FC = () => {
+  const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const { settings } = useSettings();
   const appVersion = settings?.appVersion || __APP_VERSION__;
 
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [supportStatus, setSupportStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [supportError, setSupportError] = useState('');
+  const [ticketCode, setTicketCode] = useState('');
+  const [supportForm, setSupportForm] = useState({
+    category: 'question',
+    subject: '',
+    message: '',
+    contact: '',
+  });
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -86,6 +100,20 @@ const AboutPage: React.FC = () => {
       }
       setUpdateStatus('error');
       setErrorMessage(err.message || 'Сталася помилка при перевірці оновлень.');
+    }
+  };
+
+  const handleSupportSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSupportStatus('submitting');
+    setSupportError('');
+    try {
+      const response = await api.post('/system/support/tickets', supportForm);
+      setTicketCode(response.data.ticketCode);
+      setSupportStatus('success');
+    } catch (error: any) {
+      setSupportError(error.response?.data?.message || 'Не вдалося надіслати звернення. Перевірте підключення до інтернету.');
+      setSupportStatus('error');
     }
   };
 
@@ -183,7 +211,11 @@ const AboutPage: React.FC = () => {
               Офіційні ресурси
             </h3>
             <div className="space-y-3">
-              <button className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/20">
+              <button
+                type="button"
+                onClick={() => setIsSupportOpen(true)}
+                className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/20"
+              >
                 Технічна підтримка <span>→</span>
               </button>
               <a
@@ -194,7 +226,11 @@ const AboutPage: React.FC = () => {
               >
                 Сайт студії <span>→</span>
               </a>
-              <button className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/20">
+              <button
+                type="button"
+                onClick={() => navigate('/documentation')}
+                className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/20"
+              >
                 Документація (Wiki) <span>→</span>
               </button>
             </div>
@@ -273,6 +309,97 @@ const AboutPage: React.FC = () => {
           <p className="mt-1">Слава Україні! 🇺🇦</p>
         </div>
       </div>
+
+      <Modal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} title="Технічна підтримка" maxWidth="lg">
+        {supportStatus === 'success' ? (
+          <div className="py-6 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <CheckCircle2 size={32} />
+            </div>
+            <h4 className="text-xl font-bold text-gray-900">Звернення надіслано</h4>
+            <p className="mt-2 text-gray-600">Номер звернення: <strong className="text-blue-700">{ticketCode}</strong></p>
+            <p className="mt-1 text-sm text-gray-500">Технічна підтримка звʼяжеться з вами за вказаними контактами.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSupportOpen(false);
+                setSupportStatus('idle');
+                setSupportForm({ category: 'question', subject: '', message: '', contact: '' });
+              }}
+              className="mt-6 rounded-2xl bg-blue-600 px-6 py-3 font-bold text-white transition-colors hover:bg-blue-700"
+            >
+              Готово
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSupportSubmit} className="space-y-4">
+            <p className="rounded-2xl bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              Разом зі зверненням буде передано лише версію SADOK, версію операційної системи та ідентифікатор ліцензії. Дані закладу, дітей і працівників не надсилаються.
+            </p>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-gray-700">Категорія</span>
+              <select
+                value={supportForm.category}
+                onChange={(event) => setSupportForm((value) => ({ ...value, category: event.target.value }))}
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              >
+                <option value="bug">Помилка в програмі</option>
+                <option value="question">Питання</option>
+                <option value="suggestion">Пропозиція</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-gray-700">Тема</span>
+              <input
+                required minLength={5} maxLength={120} value={supportForm.subject}
+                onChange={(event) => setSupportForm((value) => ({ ...value, subject: event.target.value }))}
+                placeholder="Коротко опишіть питання"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-gray-700">Опис</span>
+              <textarea
+                required minLength={10} maxLength={4000} rows={6} value={supportForm.message}
+                onChange={(event) => setSupportForm((value) => ({ ...value, message: event.target.value }))}
+                placeholder="Що сталося, які дії виконували та який результат очікували?"
+                className="w-full resize-y rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              />
+              <span className="mt-1 block text-right text-xs text-gray-400">{supportForm.message.length}/4000</span>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-gray-700">Email або телефон для відповіді</span>
+              <input
+                maxLength={160} value={supportForm.contact}
+                onChange={(event) => setSupportForm((value) => ({ ...value, contact: event.target.value }))}
+                placeholder="Необовʼязково"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
+            {supportStatus === 'error' && (
+              <div className="flex gap-2 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                <span>{supportError}</span>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button" onClick={() => setIsSupportOpen(false)} disabled={supportStatus === 'submitting'}
+                className="rounded-2xl border border-gray-200 px-5 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Скасувати
+              </button>
+              <button
+                type="submit" disabled={supportStatus === 'submitting'}
+                className="flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {supportStatus === 'submitting' ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
+                {supportStatus === 'submitting' ? 'Надсилання…' : 'Надіслати звернення'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 };

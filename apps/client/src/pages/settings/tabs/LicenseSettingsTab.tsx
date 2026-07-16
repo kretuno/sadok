@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Cpu, Copy, CheckCircle, RefreshCw, Wifi } from 'lucide-react';
 import api from '../../../api/axios';
 import { useSettings } from '../../../contexts/SettingsContext';
+import { getLicenseRefreshIntervalMs } from '../../../utils/licenseRefresh';
 
 const getDaysLabel = (count: number) => {
   const mod10 = count % 10;
@@ -75,8 +76,10 @@ const LicenseSettingsTab: React.FC = () => {
   };
 
   useEffect(() => {
-    if (settings?.isActivated) return;
-    const timer = window.setInterval(() => void checkOnlineActivation(true), 30000);
+    const timer = window.setInterval(
+      () => void checkOnlineActivation(true),
+      getLicenseRefreshIntervalMs(Boolean(settings?.isActivated)),
+    );
     return () => window.clearInterval(timer);
   }, [settings?.isActivated]);
 

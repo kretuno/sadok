@@ -14,6 +14,7 @@ import { NotificationsProvider } from './contexts/NotificationsContext';
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const InventoryPage = lazy(() => import('./pages/inventory/InventoryPage'));
 const AboutPage = lazy(() => import('./pages/about/AboutPage'));
+const DocumentationPage = lazy(() => import('./pages/documentation/DocumentationPage'));
 const MenuPage = lazy(() => import('./pages/menu/MenuPage'));
 const ChildrenPage = lazy(() => import('./pages/children/ChildrenPage'));
 const AttendancePage = lazy(() => import('./pages/attendance/AttendancePage'));
@@ -78,6 +79,7 @@ const MainContent: React.FC = () => {
             <Route path="/attendance" element={<PermissionRoute module="attendance"><AttendancePage /></PermissionRoute>} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/documentation" element={<DocumentationPage />} />
             <Route path="/psychologist" element={<PermissionRoute module="psychologist"><PsychologistPage /></PermissionRoute>} />
             <Route path="/utilities" element={<PermissionRoute module="utilities"><UtilitiesPage /></PermissionRoute>} />
             <Route path="/notifications" element={<NotificationsPage />} />

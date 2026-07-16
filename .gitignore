@@ -34,3 +34,6 @@ apps/server/sqlite.db
 uploads/
 test-server-data/
 test_spawn_prod.js
+apps/server/activation-client.json
+apps/server/backups/
+.hermes/

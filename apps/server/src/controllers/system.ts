@@ -13,6 +13,7 @@ import { dataDir } from '../paths';
 import { assertValidSadokDatabase } from '../services/backupValidation';
 import { verifyLicenseToken } from '../services/licenseToken';
 import { normalizeActivatorApiUrl } from '../services/activatorConfig';
+import { normalizeSupportRequest } from '../services/supportRequest';
 
 const LICENSE_SALT = process.env.LICENSE_SALT || 'SADOK-MACHINE-SALT-2026';
 const BACKUP_PREFIX = 'sadok_backup';
@@ -682,5 +683,61 @@ export const checkRemoteActivation = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Remote activation check failed:', error);
     return res.status(400).json({ message: error instanceof Error ? error.message : 'Не вдалося перевірити активацію' });
+  }
+};
+
+export const createSupportTicket = async (req: Request, res: Response) => {
+  try {
+    const [settings] = await db.select({ licenseKey: kindergartenSettings.licenseKey })
+      .from(kindergartenSettings)
+      .where(eq(kindergartenSettings.id, 1))
+      .limit(1);
+    if (!settings?.licenseKey) {
+      return res.status(403).json({ message: 'Для звернення до підтримки необхідно активувати SADOK' });
+    }
+
+    let appVersion = '1.0.0';
+    try {
+      const pkgPath = path.resolve(__dirname, '../../package.json');
+      if (fs.existsSync(pkgPath)) {
+        appVersion = String(JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version || appVersion);
+      }
+    } catch (error) {
+      console.warn('Could not read SADOK version for support request:', error);
+    }
+
+    const request = normalizeSupportRequest(req.body, {
+      appVersion,
+      platform: `${os.platform()} ${os.release()} ${os.arch()}`,
+    });
+    const ticket = await postActivator<{
+      ticketCode: string;
+      status: string;
+      createdAt: string;
+    }>('/api/support/tickets', {
+      ...request,
+      token: settings.licenseKey,
+    });
+
+    await logAuditEvent({
+      actionType: 'create',
+      entity: 'support_ticket',
+      newValue: {
+        ticketCode: ticket.ticketCode,
+        category: request.category,
+        subject: request.subject,
+      },
+      ipAddress: getClientIp(req),
+    });
+
+    return res.status(201).json({
+      message: 'Звернення успішно надіслано',
+      ...ticket,
+    });
+  } catch (error) {
+    console.error('Support ticket submission failed:', error);
+    return res.status(400).json({
+      message: error instanceof Error ? error.message : 'Не вдалося надіслати звернення',
+    });
   }
 };

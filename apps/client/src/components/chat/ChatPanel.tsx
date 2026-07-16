@@ -174,7 +174,7 @@ const ChatPanel: React.FC = () => {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-warm-500 text-white p-4 rounded-full shadow-lg hover:bg-warm-600 hover:scale-105 transition-all z-50 flex items-center justify-center group"
+        className="fixed bottom-6 right-6 bg-warm-500 text-white p-4 rounded-full shadow-lg hover:bg-warm-600 hover:scale-105 transition-all z-50 flex items-center justify-center group print:hidden"
       >
         <MessageCircle size={24} />
         {totalUnread > 0 && (
@@ -187,7 +187,7 @@ const ChatPanel: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-warm-100 overflow-hidden font-montserrat animate-in slide-in-from-bottom-5 fade-in duration-200">
+    <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-warm-100 overflow-hidden font-montserrat animate-in slide-in-from-bottom-5 fade-in duration-200 print:hidden">
       <div className="bg-warm-500 text-white p-3 md:p-4 flex justify-between items-center shadow-sm z-10 relative">
         <div className="flex items-center gap-2">
            <MessageCircle size={20} />

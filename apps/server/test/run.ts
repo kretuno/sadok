@@ -6,4 +6,5 @@ import './menuStockTransactions.test';
 import './notificationRules.test';
 import './permissions.test';
 import './rateLimit.test';
+import './supportRequest.test';
 import './validation.test';

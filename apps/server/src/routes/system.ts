@@ -14,7 +14,8 @@ import {
   restoreBackup,
   getMachineId,
   activateApp,
-  checkRemoteActivation
+  checkRemoteActivation,
+  createSupportTicket
 } from '../controllers/system';
 import { authenticateToken, authorizeRoles } from '../middleware/auth';
 
@@ -33,6 +34,7 @@ router.get('/', getSettings);
 router.put('/', authenticateToken, authorizeRoles('admin'), updateSettings);
 router.post('/activate', authenticateToken, authorizeRoles('admin'), activateApp);
 router.post('/activation-status', authenticateToken, authorizeRoles('admin'), checkRemoteActivation);
+router.post('/support/tickets', authenticateToken, createSupportTicket);
 router.get('/hwid', getMachineId);
 router.get('/backup/download', authenticateToken, authorizeRoles('admin'), downloadBackup);
 router.get('/backup/list', authenticateToken, authorizeRoles('admin'), getBackupList);
