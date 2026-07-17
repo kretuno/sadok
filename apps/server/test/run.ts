@@ -1,5 +1,7 @@
 import './migrations.test';
 import './activatorConfig.test';
+import './machineIdentity.test';
+import './remoteLicense.test';
 import './fileValidation.test';
 import './inventoryControlPolicy.test';
 import './menuStockTransactions.test';

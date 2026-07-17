@@ -1,5 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import api from '../api/axios';
+import { useAuth } from './AuthContext';
+import {
+  getLicenseRefreshIntervalMs,
+  shouldRefreshSettingsAfterLicenseSync,
+} from '../utils/licenseRefresh';
 
 export interface KindergartenSettings {
   id: number;
@@ -33,10 +38,12 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user);
   const [settings, setSettings] = useState<KindergartenSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshSettings = async () => {
+  const refreshSettings = useCallback(async () => {
     try {
       const res = await api.get('/settings');
       setSettings(res.data);
@@ -45,11 +52,42 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshSettings();
-  }, []);
+  }, [refreshSettings]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let disposed = false;
+    let requestInProgress = false;
+    const synchronizeLicense = async () => {
+      if (requestInProgress) return;
+      requestInProgress = true;
+      try {
+        const response = await api.post('/settings/activation-status');
+        if (!disposed && shouldRefreshSettingsAfterLicenseSync(response.data)) {
+          await refreshSettings();
+        }
+      } catch {
+        // Тимчасова недоступність Активатора не повинна блокувати локальну роботу.
+      } finally {
+        requestInProgress = false;
+      }
+    };
+
+    void synchronizeLicense();
+    const timer = window.setInterval(
+      () => void synchronizeLicense(),
+      getLicenseRefreshIntervalMs(Boolean(settings?.isActivated)),
+    );
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+    };
+  }, [isAuthenticated, refreshSettings, settings?.isActivated]);
 
   return (
     <SettingsContext.Provider value={{ settings, refreshSettings, isLoading }}>

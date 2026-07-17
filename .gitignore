@@ -35,5 +35,6 @@ uploads/
 test-server-data/
 test_spawn_prod.js
 apps/server/activation-client.json
+apps/server/machine-identity
 apps/server/backups/
 .hermes/

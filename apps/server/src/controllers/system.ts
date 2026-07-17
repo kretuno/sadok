@@ -4,7 +4,6 @@ import { kindergartenSettings } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import path from 'path';
 import fs from 'fs';
-import { execSync } from 'child_process';
 import crypto from 'crypto';
 import os from 'os';
 import zlib from 'zlib';
@@ -14,6 +13,8 @@ import { assertValidSadokDatabase } from '../services/backupValidation';
 import { verifyLicenseToken } from '../services/licenseToken';
 import { normalizeActivatorApiUrl } from '../services/activatorConfig';
 import { normalizeSupportRequest } from '../services/supportRequest';
+import { getMachineIdentity } from '../services/machineIdentity';
+import { shouldRemoveInstalledLicense } from '../services/remoteLicense';
 
 const LICENSE_SALT = process.env.LICENSE_SALT || 'SADOK-MACHINE-SALT-2026';
 const BACKUP_PREFIX = 'sadok_backup';
@@ -469,44 +470,8 @@ export const restoreBackup = async (req: Request, res: Response) => {
   }
 };
 
-const getSystemUuid = (): string => {
-  try {
-    // Спробуємо отримати UUID, але якщо ні - миттєво повернемо стабільний фолбек
-    const commands = [
-      'powershell.exe -NoProfile -Command "(Get-CimInstance Win32_ComputerSystemProduct).UUID"',
-      'wmic csproduct get uuid'
-    ];
-
-    for (const cmd of commands) {
-      try {
-        const output = execSync(cmd, { encoding: 'utf8', timeout: 3000, windowsHide: true }).trim();
-        if (output && output.length > 8 && !output.includes('Error')) {
-          // Якщо це wmic, прибираємо заголовок
-          const clean = output.split(/\r?\n/).filter(l => l.trim() && !l.toUpperCase().includes('UUID'))[0]?.trim();
-          if (clean) return clean;
-          return output;
-        }
-      } catch (e) {}
-    }
-  } catch (e) {}
-  
-  // Гарантований фолбек, який ніколи не підведе
-  return crypto.createHash('md5').update(os.hostname() || 'fallback-host').digest('hex').toUpperCase();
-};
-
-const getMachineIdentity = () => {
-  const rawUuid = getSystemUuid();
-  const machineId = crypto
-    .createHash('sha256')
-    .update(rawUuid + LICENSE_SALT)
-    .digest('hex')
-    .slice(0, 16)
-    .toUpperCase();
-  return { rawUuid, machineId };
-};
-
 const ensureRemoteActivationRequest = async () => {
-  const { machineId } = getMachineIdentity();
+  const { machineId } = getMachineIdentity(LICENSE_SALT);
   const state = readActivationState();
   const response = await postActivator<{
     requestCode: string;
@@ -528,7 +493,7 @@ const ensureRemoteActivationRequest = async () => {
 
 export const getMachineId = async (req: Request, res: Response) => {
   try {
-    const { machineId } = getMachineIdentity();
+    const { machineId } = getMachineIdentity(LICENSE_SALT);
     try {
       const remote = await ensureRemoteActivationRequest();
       return res.json({ machineId, requestCode: remote.requestCode, localMachineCode: machineId, status: remote.status, online: true });
@@ -550,7 +515,7 @@ const applyLicenseToken = async (licenseKey: string, req: Request) => {
       throw new Error('На сервері не налаштовано публічний ключ ліцензії');
     }
 
-    const { rawUuid, machineId: requestCode } = getMachineIdentity();
+    const { rawUuid, machineId: requestCode } = getMachineIdentity(LICENSE_SALT);
     const verification = verifyLicenseToken(String(licenseKey).trim(), LICENSE_PUBLIC_KEY);
 
     if (!verification.valid || !verification.payload) {
@@ -645,7 +610,7 @@ export const activateApp = async (req: Request, res: Response) => {
 
     let token = enteredValue;
     if (enteredValue.split('.').length !== 3) {
-      const { machineId } = getMachineIdentity();
+      const { machineId } = getMachineIdentity(LICENSE_SALT);
       const redeemed = await postActivator<{ token: string }>('/api/redeem', {
         activationKey: enteredValue,
         machineId,
@@ -668,6 +633,33 @@ export const checkRemoteActivation = async (req: Request, res: Response) => {
       '/api/activation-requests/status',
       { requestCode: remote.requestCode, requestSecret: remote.state.requestSecret },
     );
+
+    if (shouldRemoveInstalledLicense(status.status)) {
+      const [installedLicense] = await db.select({ licenseKey: kindergartenSettings.licenseKey })
+        .from(kindergartenSettings)
+        .where(eq(kindergartenSettings.id, 1))
+        .limit(1);
+      if (installedLicense?.licenseKey) {
+        await db.update(kindergartenSettings)
+          .set({ licenseKey: null, licenseType: null, activatedAt: null, licenseExpiresAt: null })
+          .where(eq(kindergartenSettings.id, 1));
+        await logAuditEvent({
+          actionType: 'deactivate',
+          entity: 'license',
+          entityId: 1,
+          newValue: { status: status.status, requestCode: remote.requestCode },
+          ipAddress: getClientIp(req),
+        });
+      }
+      return res.json({
+        activated: false,
+        status: status.status,
+        requestCode: remote.requestCode,
+        message: status.status === 'revoked'
+          ? 'Ліцензію або активацію цього пристрою відкликано.'
+          : 'Термін дії ліцензії завершився.',
+      });
+    }
 
     if (status.status !== 'approved' || !status.token) {
       return res.status(202).json({
