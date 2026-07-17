@@ -151,7 +151,9 @@ export interface MenuAnalysis {
     hasAdjustments: boolean;
     adjustmentsCount: number;
     ingredientAdjustments: Array<{
-      recipeIngredientId: number;
+      recipeIngredientId: number | null;
+      productId?: number | null;
+      subRecipeId?: number | null;
       ageGroup: string;
       sourceType: 'product' | 'recipe';
       sourceName: string;

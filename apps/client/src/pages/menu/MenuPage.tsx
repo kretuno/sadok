@@ -133,7 +133,7 @@ const MenuPage: React.FC = () => {
   useEffect(() => {
     void loadWeekMenus();
     void loadCurrentMenu();
-  }, [selectedDate, currentWeekStart, activeTab]);
+  }, [selectedDate, currentWeekStart, includeWeekends, activeTab]);
 
   useEffect(() => {
     if (activeTab !== 'dailyMenu' || menuForm.isConfirmed || !hasUnsavedMenuChanges || menuItemRows.filter((row) => row.recipeId).length === 0) {
@@ -654,6 +654,8 @@ const MenuPage: React.FC = () => {
           adjustmentsExpanded: false,
           adjustments: (item.ingredientAdjustments || []).map((adjustment) => ({
             recipeIngredientId: adjustment.recipeIngredientId,
+            productId: adjustment.productId,
+            subRecipeId: adjustment.subRecipeId,
             sourceType: adjustment.sourceType,
             sourceName: adjustment.sourceName,
             ageGroup: adjustment.ageGroup,
@@ -712,6 +714,8 @@ const MenuPage: React.FC = () => {
           adjustmentsExpanded: false,
           adjustments: (item.ingredientAdjustments || []).map((adjustment) => ({
             recipeIngredientId: adjustment.recipeIngredientId,
+            productId: adjustment.productId,
+            subRecipeId: adjustment.subRecipeId,
             sourceType: adjustment.sourceType,
             sourceName: adjustment.sourceName,
             ageGroup: adjustment.ageGroup,

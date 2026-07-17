@@ -24,6 +24,7 @@ import {
   type MenuStockShortageItem,
   type ProductContribution,
   type ScaleFactors,
+  validateDailyMenuInput,
 } from './menuModels';
 
 export { MenuStockShortageError } from './menuModels';
@@ -51,7 +52,12 @@ const parseLocalDate = (value: string) => {
     throw new Error('Некоректна дата меню');
   }
 
-  return new Date(year, month - 1, day, 0, 0, 0, 0);
+  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    throw new Error('Некоректна дата меню');
+  }
+
+  return date;
 };
 
 const getDayRange = (value: string) => {
@@ -67,6 +73,42 @@ const ensureNonNegativeWeight = (value: number | null | undefined, fieldName: st
   }
 
   return round4(Number(value));
+};
+
+const assertRecipeIngredientOverridesBelongToRecipes = (
+  input: DailyMenuInput,
+  ingredientRows: Array<{ id: number; recipeId: number }>
+) => {
+  const recipeIdByIngredientId = new Map(ingredientRows.map((ingredient) => [ingredient.id, ingredient.recipeId]));
+
+  input.items.forEach((item, itemIndex) => {
+    (item.overrides ?? []).forEach((override, overrideIndex) => {
+      if (
+        override.recipeIngredientId !== null &&
+        recipeIdByIngredientId.get(override.recipeIngredientId) !== item.recipeId
+      ) {
+        throw new Error(`Інгредієнт коригування №${overrideIndex + 1} не належить рецепту страви №${itemIndex + 1}`);
+      }
+    });
+  });
+};
+
+const getRecipeIngredientOverrideIds = (input: DailyMenuInput) =>
+  input.items.flatMap((item) =>
+    (item.overrides ?? []).flatMap((override) =>
+      override.recipeIngredientId === null ? [] : [override.recipeIngredientId]
+    )
+  );
+
+const validateRecipeIngredientOverrides = async (input: DailyMenuInput) => {
+  const overrideIds = getRecipeIngredientOverrideIds(input);
+  if (overrideIds.length === 0) return;
+
+  const ingredientRows = await db
+    .select({ id: recipeIngredients.id, recipeId: recipeIngredients.recipeId })
+    .from(recipeIngredients)
+    .where(inArray(recipeIngredients.id, overrideIds));
+  assertRecipeIngredientOverridesBelongToRecipes(input, ingredientRows);
 };
 
 const getAgeGroupCounts = (
@@ -463,7 +505,9 @@ async function buildMenuAnalysis(
         hasAdjustments,
         adjustmentsCount: ingredientDefinitions.filter((ingredient) => ingredient.isAdjusted).length,
         ingredientAdjustments: ingredientDefinitions.map((ingredient) => ({
-          recipeIngredientId: ingredient.recipeIngredientId,
+          recipeIngredientId: ingredient.recipeIngredientId > 0 ? ingredient.recipeIngredientId : null,
+          productId: ingredient.productId,
+          subRecipeId: ingredient.subRecipeId,
           ageGroup: ingredient.ageGroup,
           sourceType: ingredient.productId ? 'product' : 'recipe',
           sourceName: ingredient.productId
@@ -630,7 +674,9 @@ export async function getMenuDetails(menuId: number) {
   return getMenuAnalysis(menuId);
 }
 
-export async function previewMenu(input: DailyMenuInput) {
+export async function previewMenu(rawInput: unknown) {
+  const input = validateDailyMenuInput(rawInput);
+  await validateRecipeIngredientOverrides(input);
   const { start: menuDate } = getDayRange(input.date);
   const recipeIds = input.items.map((item) => item.recipeId);
   const recipeRows = recipeIds.length > 0
@@ -697,139 +743,89 @@ export async function previewMenu(input: DailyMenuInput) {
   );
 }
 
-export async function createOrUpdateMenu(input: DailyMenuInput) {
+export async function createOrUpdateMenu(rawInput: unknown) {
+  const input = validateDailyMenuInput(rawInput);
   const { start: menuDate, end: menuDateEnd } = getDayRange(input.date);
+  const menuId = db.transaction((tx) => {
+    const overrideIds = getRecipeIngredientOverrideIds(input);
+    if (overrideIds.length > 0) {
+      const ingredientRows = tx
+        .select({ id: recipeIngredients.id, recipeId: recipeIngredients.recipeId })
+        .from(recipeIngredients)
+        .where(inArray(recipeIngredients.id, overrideIds))
+        .all();
+      assertRecipeIngredientOverridesBelongToRecipes(input, ingredientRows);
+    }
 
-  let menu = await db.query.dailyMenus.findFirst({
-    where: and(gte(dailyMenus.date, menuDate), lte(dailyMenus.date, menuDateEnd)),
-  });
+    let menu = tx.query.dailyMenus.findFirst({
+      where: and(gte(dailyMenus.date, menuDate), lte(dailyMenus.date, menuDateEnd)),
+    }).sync();
 
-  if (menu?.isConfirmed) {
-    throw new Error('Не можна редагувати вже підтверджене меню');
-  }
+    if (menu?.isConfirmed) throw new Error('Не можна редагувати вже підтверджене меню');
 
-  if (menu) {
-    await db
-      .update(dailyMenus)
-      .set({
+    if (menu) {
+      tx.update(dailyMenus).set({
         childrenCount0_4: input.childrenCount0_4,
         childrenCount5_7: input.childrenCount5_7,
         employeesCount: input.employeesCount,
         targetPrice0_4: input.targetPrice0_4,
         targetPrice5_7: input.targetPrice5_7,
-      })
-      .where(eq(dailyMenus.id, menu.id));
-  } else {
-    const inserted = await db
-      .insert(dailyMenus)
-      .values({
+      }).where(eq(dailyMenus.id, menu.id)).run();
+    } else {
+      menu = tx.insert(dailyMenus).values({
         date: menuDate,
         childrenCount0_4: input.childrenCount0_4,
         childrenCount5_7: input.childrenCount5_7,
         employeesCount: input.employeesCount,
         targetPrice0_4: input.targetPrice0_4,
         targetPrice5_7: input.targetPrice5_7,
-      })
-      .returning();
+      }).returning().get();
+    }
 
-    menu = inserted[0];
-  }
+    tx.delete(menuItemRecipes).where(eq(menuItemRecipes.menuId, menu.id)).run();
 
-  await db.delete(menuItemRecipes).where(eq(menuItemRecipes.menuId, menu.id));
+    if (input.items.length > 0) {
+      const insertedItems = tx.insert(menuItemRecipes).values(input.items.map((item) => ({
+        menuId: menu!.id,
+        recipeId: item.recipeId,
+        mealType: item.mealType,
+        outputWeight0_4: item.outputWeight0_4,
+        outputWeight5_7: item.outputWeight5_7,
+        outputWeightEmployees: item.outputWeightEmployees,
+      }))).returning({ id: menuItemRecipes.id }).all();
 
-  if (input.items.length > 0) {
-    const insertedItems = await db
-      .insert(menuItemRecipes)
-      .values(
-        input.items.map((item) => ({
-          menuId: menu!.id,
-          recipeId: item.recipeId,
-          mealType: item.mealType,
-          outputWeight0_4: item.outputWeight0_4,
-          outputWeight5_7: item.outputWeight5_7,
-          outputWeightEmployees: item.outputWeightEmployees,
-        }))
-      )
-      .returning({ id: menuItemRecipes.id });
+      const overrideRows: Array<{
+        menuItemId: number; recipeIngredientId: number | null; productId: number | null;
+        subRecipeId: number | null; ageGroup: string | null; grossWeight: number; netWeight: number;
+      }> = [];
 
-    const overrideRows: Array<{
-      menuItemId: number;
-      recipeIngredientId: number | null;
-      productId: number | null;
-      subRecipeId: number | null;
-      ageGroup: string | null;
-      grossWeight: number;
-      netWeight: number;
-    }> = [];
+      input.items.forEach((item, index) => {
+        const defaults = new Map(tx.select({
+          id: recipeIngredients.id, grossWeight: recipeIngredients.grossWeight, netWeight: recipeIngredients.netWeight,
+        }).from(recipeIngredients).where(eq(recipeIngredients.recipeId, item.recipeId)).all().map((row) => [
+          row.id, { grossWeight: Number(row.grossWeight), netWeight: Number(row.netWeight) },
+        ]));
 
-    for (let index = 0; index < input.items.length; index += 1) {
-      const item = input.items[index];
-      const insertedItem = insertedItems[index];
-      const recipeIngredientRows = await db
-        .select({
-          id: recipeIngredients.id,
-          grossWeight: recipeIngredients.grossWeight,
-          netWeight: recipeIngredients.netWeight,
-        })
-        .from(recipeIngredients)
-        .where(eq(recipeIngredients.recipeId, item.recipeId));
-
-      const defaults = new Map(
-        recipeIngredientRows.map((row) => [
-          row.id,
-          {
-            grossWeight: Number(row.grossWeight),
-            netWeight: Number(row.netWeight),
-          },
-        ])
-      );
-
-      (item.overrides ?? []).forEach((override) => {
-        const grossWeight = ensureNonNegativeWeight(override.grossWeight, 'grossWeight');
-        const netWeight = ensureNonNegativeWeight(override.netWeight, 'netWeight');
-
-        if (override.recipeIngredientId) {
-          const original = defaults.get(override.recipeIngredientId);
-          if (!original) {
-            return;
+        (item.overrides ?? []).forEach((override) => {
+          const grossWeight = ensureNonNegativeWeight(override.grossWeight, 'grossWeight');
+          const netWeight = ensureNonNegativeWeight(override.netWeight, 'netWeight');
+          if (override.recipeIngredientId) {
+            const original = defaults.get(override.recipeIngredientId);
+            if (round4(grossWeight) === round4(original!.grossWeight) && round4(netWeight) === round4(original!.netWeight)) return;
+            overrideRows.push({ menuItemId: insertedItems[index].id, recipeIngredientId: override.recipeIngredientId, productId: null, subRecipeId: null, ageGroup: null, grossWeight, netWeight });
+          } else if (override.productId) {
+            overrideRows.push({ menuItemId: insertedItems[index].id, recipeIngredientId: null, productId: override.productId, subRecipeId: null, ageGroup: override.ageGroup || 'common', grossWeight, netWeight });
           }
-
-          if (
-            round4(grossWeight) === round4(original.grossWeight) &&
-            round4(netWeight) === round4(original.netWeight)
-          ) {
-            return;
-          }
-
-          overrideRows.push({
-            menuItemId: insertedItem.id,
-            recipeIngredientId: override.recipeIngredientId,
-            productId: null,
-            subRecipeId: null,
-            ageGroup: null,
-            grossWeight,
-            netWeight,
-          });
-        } else if (override.productId) {
-          overrideRows.push({
-            menuItemId: insertedItem.id,
-            recipeIngredientId: null,
-            productId: override.productId,
-            subRecipeId: null,
-            ageGroup: override.ageGroup || 'common',
-            grossWeight,
-            netWeight,
-          });
-        }
+        });
       });
+
+      if (overrideRows.length > 0) tx.insert(menuItemIngredientOverrides).values(overrideRows).run();
     }
 
-    if (overrideRows.length > 0) {
-      await db.insert(menuItemIngredientOverrides).values(overrideRows);
-    }
-  }
+    return menu.id;
+  });
 
-  return getMenuDetails(menu.id);
+  return getMenuDetails(menuId);
 }
 
 export async function calculateMenuRequirement(menuId: number) {
