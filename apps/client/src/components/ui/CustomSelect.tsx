@@ -18,6 +18,7 @@ interface CustomSelectProps {
   onChange: (value: string | number) => void;
   placeholder?: string;
   className?: string;
+  optionsClassName?: string;
   disabled?: boolean;
 }
 
@@ -27,6 +28,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   onChange,
   placeholder = 'Оберіть варіант',
   className,
+  optionsClassName,
   disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -71,7 +73,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
       {isOpen && (
         <div className="absolute left-0 z-[100] mt-2 w-full origin-top-right overflow-hidden rounded-2xl border border-warm-100 bg-white/95 backdrop-blur-xl p-1.5 shadow-2xl animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300">
-          <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent">
+          <div className={cn('max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent', optionsClassName)}>
             {options.length > 0 ? (
               options.map((option) => {
                 const isSelected = String(option.id) === String(value);

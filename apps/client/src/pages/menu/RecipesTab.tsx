@@ -183,7 +183,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
                 <Plus size={18} />
               </button>
             </div>
-            <div className="max-h-60 space-y-3 overflow-y-auto pr-2">
+            <div className="space-y-3">
               {ingredientRows.map((ingredient, index) => (
                 <div key={index} className="space-y-2 rounded-xl border border-warm-100 bg-warm-50/50 p-3">
                   <div className="grid grid-cols-[1fr_auto] gap-2">
@@ -213,6 +213,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
                     options={ingredient.sourceType === 'product' ? products : recipes.filter((recipe) => recipe.id !== selectedRecipeId)}
                     value={ingredient.sourceId}
                     onChange={(value) => setIngredientRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, sourceId: String(value) } : row))}
+                    optionsClassName="max-h-[50vh]"
                   />
                   <div className="grid grid-cols-2 gap-2">
                     <input
