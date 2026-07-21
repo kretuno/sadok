@@ -96,7 +96,7 @@ const resources = {
       reports_sheet_name: 'Звіт',
       report_saldo: 'Сальдо продуктів',
       report_spent_products: 'Витрати продуктів за період',
-      report_detailed_menus: 'Детальний журнал меню',
+      report_detailed_menus: 'Детальний журнал меню-вимог',
       report_attendance: 'Статистика відвідуваності',
       report_children: 'Список усіх дітей',
       report_sick: 'Журнал хворих дітей',

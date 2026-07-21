@@ -26,7 +26,6 @@ const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const PsychologistPage = lazy(() => import('./pages/psychologist/PsychologistPage'));
 const UtilitiesPage = lazy(() => import('./pages/utilities/UtilitiesPage'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
-const ChatPanel = lazy(() => import('./components/chat/ChatPanel'));
 
 const PageFallback: React.FC = () => (
   <div className="flex min-h-[40vh] items-center justify-center">
@@ -57,7 +56,6 @@ const MainContent: React.FC = () => {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/settings" />} />
           </Routes>
-          <ChatPanel />
         </Suspense>
       </Layout>
     );
@@ -85,7 +83,6 @@ const MainContent: React.FC = () => {
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-          <ChatPanel />
         </Suspense>
       </Layout>
     </NotificationsProvider>

@@ -57,6 +57,8 @@ export interface RecipeDetails {
     ageGroup: string;
     grossWeight: number;
     netWeight: number;
+    productName?: string | null;
+    subRecipeName?: string | null;
   }>;
   cost: {
     common: number;

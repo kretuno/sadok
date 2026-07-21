@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Plus, Printer, Trash2 } from 'lucide-react';
 import api from '../../api/axios';
 import CustomSelect from '../../components/ui/CustomSelect';
+import Modal from '../../components/ui/Modal';
+import type { KindergartenSettings } from '../../contexts/SettingsContext';
 import type { ProductOption, RecipeDetails, RecipeSummary } from './menuTypes';
 
 interface IngredientRow {
   sourceType: 'product' | 'recipe';
   sourceId: string;
   ageGroup: string;
-  weight: string;
+  grossWeight: string;
+  netWeight: string;
 }
 
 interface RecipesTabProps {
@@ -16,6 +19,8 @@ interface RecipesTabProps {
   products: ProductOption[];
   onSaved: () => void | Promise<void>;
   onError: (message: string) => void;
+  settings: KindergartenSettings | null;
+  canPrint: boolean;
 }
 
 const emptyRecipeForm = () => ({
@@ -30,25 +35,42 @@ const emptyIngredient = (): IngredientRow => ({
   sourceType: 'product',
   sourceId: '',
   ageGroup: 'common',
-  weight: '',
+  grossWeight: '',
+  netWeight: '',
 });
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH' }).format(value || 0);
 
-const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onError }) => {
+const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onError, settings, canPrint }) => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null);
   const [loadedRecipeId, setLoadedRecipeId] = useState<number | null>(null);
   const [recipeForm, setRecipeForm] = useState(emptyRecipeForm);
   const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([emptyIngredient()]);
   const [saving, setSaving] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [recipeDetails, setRecipeDetails] = useState<RecipeDetails | null>(null);
+  const [techCardPreview, setTechCardPreview] = useState<RecipeDetails | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const techCardFrameRef = useRef<HTMLIFrameElement | null>(null);
+  const techCardFrameRootRef = useRef<{ unmount: () => void } | null>(null);
 
   const resetEditor = () => {
     setSelectedRecipeId(null);
     setLoadedRecipeId(null);
     setRecipeForm(emptyRecipeForm());
     setIngredientRows([emptyIngredient()]);
+    setRecipeDetails(null);
+  };
+
+  const openNewRecipe = () => {
+    resetEditor();
+    setIsEditorOpen(true);
+  };
+
+  const closeEditor = () => {
+    resetEditor();
+    setIsEditorOpen(false);
   };
 
   useEffect(() => {
@@ -69,8 +91,10 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
         sourceType: ingredient.productId ? 'product' : 'recipe',
         sourceId: String(ingredient.productId || ingredient.subRecipeId || ''),
         ageGroup: ingredient.ageGroup,
-        weight: String(ingredient.grossWeight),
+        grossWeight: String(ingredient.grossWeight),
+        netWeight: String(ingredient.netWeight),
       })));
+      setRecipeDetails(details);
       setLoadedRecipeId(selectedRecipeId);
       editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(() => {
@@ -81,6 +105,32 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
       active = false;
     };
   }, [selectedRecipeId, onError]);
+
+  useEffect(() => {
+    if (!techCardPreview || !techCardFrameRef.current) return;
+    const iframe = techCardFrameRef.current;
+    const doc = iframe.contentDocument;
+    if (!doc) return;
+    doc.open();
+    doc.write('<html><head><title>Технологічна карта</title><style>html,body{margin:0;background:#fff;font-family:"Times New Roman",serif}</style></head><body><div id="print-root"></div></body></html>');
+    doc.close();
+    const container = doc.getElementById('print-root');
+    if (!container) return;
+    let cancelled = false;
+    void Promise.all([import('react-dom/client'), import('../../components/ui/PrintRecipeTechCard')]).then(([{ createRoot }, module]) => {
+      if (cancelled) return;
+      techCardFrameRootRef.current?.unmount();
+      const root = createRoot(container);
+      techCardFrameRootRef.current = root;
+      root.render(<module.default data={techCardPreview} settings={settings} />);
+    });
+    return () => {
+      cancelled = true;
+      const root = techCardFrameRootRef.current;
+      techCardFrameRootRef.current = null;
+      if (root) queueMicrotask(() => root.unmount());
+    };
+  }, [settings, techCardPreview]);
 
   const saveRecipe = async () => {
     if (selectedRecipeId && loadedRecipeId !== selectedRecipeId) {
@@ -97,8 +147,8 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
           productId: row.sourceType === 'product' ? Number(row.sourceId) : undefined,
           subRecipeId: row.sourceType === 'recipe' ? Number(row.sourceId) : undefined,
           ageGroup: row.ageGroup,
-          grossWeight: Number(row.weight),
-          netWeight: Number(row.weight),
+          grossWeight: Number(row.grossWeight),
+          netWeight: Number(row.netWeight || row.grossWeight),
         })),
       };
 
@@ -115,6 +165,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
 
     try {
       await onSaved();
+      closeEditor();
     } catch {
       onError('Рецепт збережено, але список не вдалося оновити');
     } finally {
@@ -123,17 +174,14 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
   };
 
   return (
-    <div className="grid gap-6 2xl:grid-cols-[1fr_450px]">
-      <div className={`rounded-3xl border border-warm-100 bg-white p-5 shadow-sm ${selectedRecipeId ? 'order-2 2xl:order-2' : 'order-2'}`}>
+    <>
+    <div className="space-y-6">
+      {!isEditorOpen && (
+      <div className="rounded-3xl border border-warm-100 bg-white p-5 shadow-sm">
         <div className="mb-6 flex items-center justify-between">
           <h3 className="text-xl font-bold text-gray-800">База рецептів</h3>
           <div className="flex gap-2">
-            {selectedRecipeId && (
-              <button onClick={resetEditor} className="ui-button-secondary px-4 py-2 text-sm">
-                <RotateCcw size={16} /> Скасувати редагування
-              </button>
-            )}
-            <button onClick={resetEditor} className="ui-button-secondary px-4 py-2 text-sm">
+            <button onClick={openNewRecipe} className="ui-button-primary px-4 py-2 text-sm">
               <Plus size={16} /> Новий рецепт
             </button>
           </div>
@@ -146,6 +194,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
                 if (recipe.id !== selectedRecipeId) {
                   setLoadedRecipeId(null);
                   setSelectedRecipeId(recipe.id);
+                  setIsEditorOpen(true);
                 }
               }}
               className={`w-full rounded-2xl border p-4 text-left transition-all ${selectedRecipeId === recipe.id ? 'border-warm-500 bg-warm-50' : 'border-warm-100 hover:bg-warm-50/50'}`}
@@ -166,15 +215,26 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
           ))}
         </div>
       </div>
+      )}
 
-      <div ref={editorRef} className={`h-fit rounded-3xl border border-warm-100 bg-white p-6 shadow-sm ${selectedRecipeId ? 'order-1 2xl:col-span-2' : 'sticky top-6'}`}>
-        <h3 className="mb-6 text-xl font-bold text-gray-800">{selectedRecipeId ? 'Редагування рецепта' : 'Створення рецепта'}</h3>
+      {isEditorOpen && (
+      <div ref={editorRef} className="mx-auto max-w-5xl rounded-3xl border border-warm-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={closeEditor} className="ui-button-secondary px-3 py-2 text-sm">
+              <ArrowLeft size={16} /> До бази рецептів
+            </button>
+            <h3 className="text-xl font-bold text-gray-800">{selectedRecipeId ? 'Редагування рецепта' : 'Створення рецепта'}</h3>
+          </div>
+          {canPrint && recipeDetails && <button type="button" onClick={() => setTechCardPreview(recipeDetails)} className="ui-button-secondary px-4 py-2 text-sm"><FileText size={16} /> Технологічна карта</button>}
+        </div>
         <form className="space-y-4">
           <input value={recipeForm.name} onChange={(event) => setRecipeForm({ ...recipeForm, name: event.target.value })} placeholder="Назва рецепта" className="ui-input font-bold" />
           <div className="grid grid-cols-2 gap-3">
             <input value={recipeForm.dishType} onChange={(event) => setRecipeForm({ ...recipeForm, dishType: event.target.value })} placeholder="Тип страви" className="ui-input text-sm" />
             <input value={recipeForm.outputWeight} onChange={(event) => setRecipeForm({ ...recipeForm, outputWeight: event.target.value })} placeholder="Вихід, г" className="ui-input text-sm" />
           </div>
+          <textarea value={recipeForm.techCard} onChange={(event) => setRecipeForm({ ...recipeForm, techCard: event.target.value })} placeholder="Технологія приготування" className="ui-input min-h-28 resize-y text-sm" />
 
           <div className="border-t border-warm-100 pt-4">
             <div className="mb-3 flex items-center justify-between">
@@ -215,11 +275,17 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
                     onChange={(value) => setIngredientRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, sourceId: String(value) } : row))}
                     optionsClassName="max-h-[50vh]"
                   />
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <input
-                      placeholder="Кількість / вага"
-                      value={ingredient.weight}
-                      onChange={(event) => setIngredientRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, weight: event.target.value } : row))}
+                      placeholder="Брутто, г"
+                      value={ingredient.grossWeight}
+                      onChange={(event) => setIngredientRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, grossWeight: event.target.value } : row))}
+                      className="ui-input text-xs"
+                    />
+                    <input
+                      placeholder="Нетто, г"
+                      value={ingredient.netWeight}
+                      onChange={(event) => setIngredientRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, netWeight: event.target.value } : row))}
                       className="ui-input text-xs"
                     />
                     <CustomSelect
@@ -242,7 +308,22 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
           </button>
         </form>
       </div>
+      )}
     </div>
+    <Modal isOpen={Boolean(techCardPreview)} onClose={() => setTechCardPreview(null)} title="Технологічна карта" maxWidth="5xl">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3 text-sm text-gray-500">
+          <span>Перевірте картку перед друком. Вона використовує актуальні дані рецепта.</span>
+          <button type="button" onClick={() => techCardFrameRef.current?.contentWindow?.print()} className="ui-button-primary shrink-0 px-4">
+            <Printer size={16} /> Друкувати
+          </button>
+        </div>
+        <div className="rounded-3xl border border-warm-100 bg-warm-50/40 p-3">
+          <iframe ref={techCardFrameRef} title="Попередній перегляд технологічної карти" className="h-[calc(100vh-19rem)] min-h-96 w-full rounded-2xl bg-white" />
+        </div>
+      </div>
+    </Modal>
+    </>
   );
 };
 

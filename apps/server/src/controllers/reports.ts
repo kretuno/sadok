@@ -13,14 +13,14 @@ import {
   psychologicalConsultations,
   attendance,
   medicationMovements,
-  menuItemRecipes,
-  recipes,
   utilityMeters,
   utilityMeterReadings,
   utilityTariffs,
 } from '../db/schema';
 import { eq, and, gte, lte, asc, desc, sql, inArray } from 'drizzle-orm';
 import { getAuditReportEntries } from '../services/audit';
+import { getMenuDetails } from '../services/menus';
+import { buildDetailedMenuReportRows } from '../services/detailedMenuReport';
 
 // Допоміжна функція для безпечного парсингу дат
 const parseDates = (start?: any, end?: any) => {
@@ -322,27 +322,24 @@ export const getDetailedMenusReport = async (req: Request, res: Response) => {
     const { start, end } = req.query;
     const { startDate, endDate } = parseDates(start, end);
 
-    const data = await db.select({
-      id: dailyMenus.id,
-      date: dailyMenus.date,
-      mealType: menuItemRecipes.mealType,
-      dishName: recipes.name,
-      count0_4: dailyMenus.childrenCount0_4,
-      count5_7: dailyMenus.childrenCount5_7,
-      countEmployees: dailyMenus.employeesCount
-    })
+    const menus = await db.select({ id: dailyMenus.id })
     .from(dailyMenus)
-    .innerJoin(menuItemRecipes, eq(dailyMenus.id, menuItemRecipes.menuId))
-    .innerJoin(recipes, eq(menuItemRecipes.recipeId, recipes.id))
     .where(and(
       gte(dailyMenus.date, startDate),
       lte(dailyMenus.date, endDate)
     ))
-    .orderBy(desc(dailyMenus.date), asc(menuItemRecipes.mealType));
+    .orderBy(desc(dailyMenus.date));
+
+    const data = [];
+    for (const menu of menus) {
+      const details = await getMenuDetails(menu.id);
+      data.push(...buildDetailedMenuReportRows(details));
+    }
 
     res.json(data);
   } catch (error) {
-    res.status(500).json({ message: 'Error' });
+    console.error('Error generating detailed menus report:', error);
+    res.status(500).json({ message: 'Не вдалося сформувати детальний журнал меню-вимог' });
   }
 };
 

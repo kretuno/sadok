@@ -6,6 +6,7 @@ import './fileValidation.test';
 import './inventoryControlPolicy.test';
 import './menuStockTransactions.test';
 import './menuValidation.test';
+import './detailedMenuReport.test';
 import './notificationRules.test';
 import './permissions.test';
 import './rateLimit.test';

@@ -2540,6 +2540,8 @@ const MenuPage: React.FC = () => {
         <RecipesTab
           recipes={recipes}
           products={products}
+          settings={settings}
+          canPrint={canPrintMenu}
           onSaved={async () => {
             setSuccess('Рецепт збережено');
             await loadBootstrapData();

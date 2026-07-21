@@ -6,6 +6,15 @@ import api from '../../api/axios';
 import Modal from '../../components/ui/Modal';
 import { useNavigate } from 'react-router-dom';
 
+const SUPPORT_EMAIL = 'edosipov@gmail.com';
+type ApiError = { response?: { status?: number; data?: { message?: unknown } } };
+
+const getApiErrorResponse = (error: unknown): ApiError['response'] => (
+  typeof error === 'object' && error !== null && 'response' in error
+    ? (error as ApiError).response
+    : undefined
+);
+
 const AboutPage: React.FC = () => {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
@@ -17,6 +26,7 @@ const AboutPage: React.FC = () => {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [supportStatus, setSupportStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [supportError, setSupportError] = useState('');
+  const [isEmailFallbackAvailable, setIsEmailFallbackAvailable] = useState(false);
   const [ticketCode, setTicketCode] = useState('');
   const [supportForm, setSupportForm] = useState({
     category: 'question',
@@ -93,13 +103,13 @@ const AboutPage: React.FC = () => {
         setUpdateStatus('error');
         setErrorMessage(result.error || 'Не вдалося підключитися до сервера оновлень.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
         updateTimeoutRef.current = null;
       }
       setUpdateStatus('error');
-      setErrorMessage(err.message || 'Сталася помилка при перевірці оновлень.');
+      setErrorMessage(err instanceof Error ? err.message : 'Сталася помилка при перевірці оновлень.');
     }
   };
 
@@ -107,15 +117,35 @@ const AboutPage: React.FC = () => {
     event.preventDefault();
     setSupportStatus('submitting');
     setSupportError('');
+    setIsEmailFallbackAvailable(false);
     try {
       const response = await api.post('/system/support/tickets', supportForm);
       setTicketCode(response.data.ticketCode);
       setSupportStatus('success');
-    } catch (error: any) {
-      setSupportError(error.response?.data?.message || 'Не вдалося надіслати звернення. Перевірте підключення до інтернету.');
+    } catch (error: unknown) {
+      const errorResponse = getApiErrorResponse(error);
+      const status = errorResponse?.status;
+      const responseMessage = String(errorResponse?.data?.message || '');
+      const isTicketServiceUnavailable = !errorResponse
+        || status === 404
+        || responseMessage === 'Not found'
+        || responseMessage.includes('Сервіс активації');
+      setSupportError(isTicketServiceUnavailable
+        ? 'Онлайн-сервіс звернень тимчасово недоступний. Скористайтеся резервним зверненням через email.'
+        : responseMessage || 'Не вдалося надіслати звернення.');
+      setIsEmailFallbackAvailable(isTicketServiceUnavailable);
       setSupportStatus('error');
     }
   };
+
+  const supportEmailHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`[SADOK] ${supportForm.subject || 'Звернення до підтримки'}`)}&body=${encodeURIComponent([
+    `Категорія: ${supportForm.category}`,
+    `Версія SADOK: ${appVersion}`,
+    '',
+    supportForm.message,
+    '',
+    `Контакт для відповіді: ${supportForm.contact || 'не вказано'}`,
+  ].join('\n'))}`;
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-white p-4 md:p-8">
@@ -194,7 +224,7 @@ const AboutPage: React.FC = () => {
                 <p className="text-sm font-medium text-blue-600/80 uppercase tracking-wider">Lead Developer & Founder</p>
               </div>
               <div className="flex flex-col gap-2 border-t border-gray-50 pt-4">
-                <a href="mailto:edosipov@gmail.com" className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
                   <Mail size={16} /> edosipov@gmail.com
                 </a>
                 <a href="tel:+380675694704" className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
@@ -377,9 +407,16 @@ const AboutPage: React.FC = () => {
               />
             </label>
             {supportStatus === 'error' && (
-              <div className="flex gap-2 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                <div className="flex gap-2">
                 <AlertCircle size={18} className="mt-0.5 shrink-0" />
                 <span>{supportError}</span>
+                </div>
+                {isEmailFallbackAvailable && (
+                  <a href={supportEmailHref} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 font-bold text-rose-700 transition-colors hover:bg-rose-100">
+                    <Mail size={16} /> Створити лист до підтримки
+                  </a>
+                )}
               </div>
             )}
             <div className="flex justify-end gap-3 pt-2">
