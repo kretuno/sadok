@@ -33,6 +33,7 @@ export interface EmployeeInventoryInput {
   inventoryNumber: string;
   name: string;
   category: string;
+  quantity?: number;
   location?: string;
   assignmentType?: InventoryAssignmentType;
   employeeId?: number | null;
@@ -251,6 +252,7 @@ export async function getInventoryRegistry() {
       inventoryNumber: inventory.inventoryNumber,
       name: inventory.name,
       category: inventory.category,
+      quantity: inventory.quantity,
       location: inventory.location,
       assignmentType: inventory.assignmentType,
       responsibleId: inventory.responsibleId,
@@ -556,13 +558,7 @@ export async function createInventoryItem(
     throw new Error('Категорія ТМЦ є обов’язковою');
   }
 
-  const existingInventory = await db.query.inventory.findFirst({
-    where: eq(inventory.inventoryNumber, input.inventoryNumber.trim()),
-  });
-
-  if (existingInventory) {
-    throw new Error('ТМЦ з таким інвентарним номером вже існує');
-  }
+  const requestedQuantity = input.quantity && input.quantity > 0 ? Number(input.quantity) : 1;
 
   const placement = await resolveInventoryAssignment({
     assignmentType: input.assignmentType,
@@ -577,6 +573,7 @@ export async function createInventoryItem(
       inventoryNumber: input.inventoryNumber.trim(),
       name: input.name.trim(),
       category: input.category.trim(),
+      quantity: requestedQuantity,
       location: input.location?.trim() || null,
       responsibleId: placement.responsibleId,
       assignmentType: placement.assignmentType,
@@ -591,6 +588,7 @@ export async function createInventoryItem(
 
   await db.insert(inventoryTransfers).values({
     inventoryId: inserted[0].id,
+    quantity: requestedQuantity,
     fromEmployeeId: null,
     toEmployeeId: placement.responsibleId,
     fromAssignmentType: null,
@@ -599,7 +597,7 @@ export async function createInventoryItem(
     toGroupId: placement.groupId,
     fromOutdoorArea: null,
     toOutdoorArea: placement.outdoorArea,
-    note: `Первинне створення та розміщення: ${placement.assignmentLabel}`,
+    note: `Первинне створення та розміщення (${requestedQuantity} шт.): ${placement.assignmentLabel}`,
     transferredByUserId: transferredByUserId ?? null,
   });
 
@@ -608,7 +606,7 @@ export async function createInventoryItem(
       employeeId: placement.responsibleId,
       eventType: 'inventory_created',
       title: 'Створено та закріплено нову ТМЦ',
-      description: `Створено ТМЦ "${input.name.trim()}" з інвентарним номером "${input.inventoryNumber.trim()}"`,
+      description: `Створено ТМЦ "${input.name.trim()}" з інвентарним номером "${input.inventoryNumber.trim()}" у кількості ${requestedQuantity} шт.`,
       userId: transferredByUserId ?? null,
     });
   }
@@ -618,6 +616,7 @@ export async function createInventoryItem(
 
 export async function reassignInventoryItem(input: {
   inventoryId: number;
+  quantity?: number;
   assignmentType: InventoryAssignmentType;
   employeeId?: number | null;
   groupId?: number | null;
@@ -625,12 +624,19 @@ export async function reassignInventoryItem(input: {
   note?: string;
   transferredByUserId?: number;
 }) {
-  const inventoryItem = await db.query.inventory.findFirst({
+  const currentItem = await db.query.inventory.findFirst({
     where: eq(inventory.id, input.inventoryId),
   });
 
-  if (!inventoryItem) {
+  if (!currentItem) {
     throw new Error('Одиницю ТМЦ не знайдено');
+  }
+
+  const currentQuantity = currentItem.quantity || 1;
+  const moveQuantity = input.quantity && input.quantity > 0 ? Number(input.quantity) : currentQuantity;
+
+  if (moveQuantity > currentQuantity) {
+    throw new Error(`Кількість для переміщення (${moveQuantity} шт.) перевищує наявну кількість (${currentQuantity} шт.)`);
   }
 
   const placement = await resolveInventoryAssignment({
@@ -640,36 +646,81 @@ export async function reassignInventoryItem(input: {
     outdoorArea: input.outdoorArea ?? null,
   });
 
-  await db
-    .update(inventory)
-    .set({
-      responsibleId: placement.responsibleId,
-      assignmentType: placement.assignmentType,
-      groupId: placement.groupId,
-      outdoorArea: placement.outdoorArea,
-    })
-    .where(eq(inventory.id, input.inventoryId));
+  if (moveQuantity >= currentQuantity) {
+    await db
+      .update(inventory)
+      .set({
+        responsibleId: placement.responsibleId,
+        assignmentType: placement.assignmentType,
+        groupId: placement.groupId,
+        outdoorArea: placement.outdoorArea,
+      })
+      .where(eq(inventory.id, currentItem.id));
 
-  await db.insert(inventoryTransfers).values({
-    inventoryId: input.inventoryId,
-    fromEmployeeId: inventoryItem.responsibleId ?? null,
-    toEmployeeId: placement.responsibleId,
-    fromAssignmentType: inventoryItem.assignmentType ?? null,
-    toAssignmentType: placement.assignmentType,
-    fromGroupId: inventoryItem.groupId ?? null,
-    toGroupId: placement.groupId,
-    fromOutdoorArea: inventoryItem.outdoorArea ?? null,
-    toOutdoorArea: placement.outdoorArea,
-    note: input.note?.trim() || `Змінено прив’язку ТМЦ: ${placement.assignmentLabel}`,
-    transferredByUserId: input.transferredByUserId ?? null,
-  });
+    await db.insert(inventoryTransfers).values({
+      inventoryId: currentItem.id,
+      quantity: moveQuantity,
+      fromEmployeeId: currentItem.responsibleId ?? null,
+      toEmployeeId: placement.responsibleId,
+      fromAssignmentType: currentItem.assignmentType ?? null,
+      toAssignmentType: placement.assignmentType,
+      fromGroupId: currentItem.groupId ?? null,
+      toGroupId: placement.groupId,
+      fromOutdoorArea: currentItem.outdoorArea ?? null,
+      toOutdoorArea: placement.outdoorArea,
+      note: input.note?.trim() || `Переміщення всього обсягу (${moveQuantity} шт.): ${placement.assignmentLabel}`,
+      transferredByUserId: input.transferredByUserId ?? null,
+    });
+  } else {
+    // Часткове переміщення
+    await db
+      .update(inventory)
+      .set({
+        quantity: currentQuantity - moveQuantity,
+      })
+      .where(eq(inventory.id, currentItem.id));
 
-  if (inventoryItem.responsibleId && inventoryItem.responsibleId !== placement.responsibleId) {
+    const insertedNew = await db
+      .insert(inventory)
+      .values({
+        inventoryNumber: currentItem.inventoryNumber,
+        name: currentItem.name,
+        category: currentItem.category,
+        quantity: moveQuantity,
+        location: currentItem.location,
+        responsibleId: placement.responsibleId,
+        assignmentType: placement.assignmentType,
+        groupId: placement.groupId,
+        outdoorArea: placement.outdoorArea,
+        initialValue: currentItem.initialValue,
+        status: currentItem.status,
+        arrivalDate: currentItem.arrivalDate,
+        notes: currentItem.notes,
+      })
+      .returning();
+
+    await db.insert(inventoryTransfers).values({
+      inventoryId: insertedNew[0].id,
+      quantity: moveQuantity,
+      fromEmployeeId: currentItem.responsibleId ?? null,
+      toEmployeeId: placement.responsibleId,
+      fromAssignmentType: currentItem.assignmentType ?? null,
+      toAssignmentType: placement.assignmentType,
+      fromGroupId: currentItem.groupId ?? null,
+      toGroupId: placement.groupId,
+      fromOutdoorArea: currentItem.outdoorArea ?? null,
+      toOutdoorArea: placement.outdoorArea,
+      note: input.note?.trim() || `Часткове переміщення (${moveQuantity} шт. із ${currentQuantity} шт.): ${placement.assignmentLabel}`,
+      transferredByUserId: input.transferredByUserId ?? null,
+    });
+  }
+
+  if (currentItem.responsibleId && currentItem.responsibleId !== placement.responsibleId) {
     await addEmployeeHistoryEntry({
-      employeeId: inventoryItem.responsibleId,
+      employeeId: currentItem.responsibleId,
       eventType: 'inventory_transferred_out',
       title: 'ТМЦ знято з відповідальності співробітника',
-      description: `ТМЦ "${inventoryItem.name}" (${inventoryItem.inventoryNumber}) більше не закріплена за співробітником`,
+      description: `Частину/всю ТМЦ "${currentItem.name}" (${currentItem.inventoryNumber}, ${moveQuantity} шт.) більше не закріплено за співробітником`,
       userId: input.transferredByUserId ?? null,
     });
   }
@@ -679,7 +730,7 @@ export async function reassignInventoryItem(input: {
       employeeId: placement.responsibleId,
       eventType: 'inventory_assigned',
       title: 'Закріплено ТМЦ',
-      description: `ТМЦ "${inventoryItem.name}" (${inventoryItem.inventoryNumber}) закріплено: ${placement.assignmentLabel}`,
+      description: `ТМЦ "${currentItem.name}" (${currentItem.inventoryNumber}) у кількості ${moveQuantity} шт. закріплено: ${placement.assignmentLabel}`,
       userId: input.transferredByUserId ?? null,
     });
   }

@@ -179,9 +179,10 @@ export const menuItemIngredientOverrides = sqliteTable('menu_item_ingredient_ove
 
 export const inventory = sqliteTable('inventory', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  inventoryNumber: text('inventory_number').notNull().unique(),
+  inventoryNumber: text('inventory_number').notNull(),
   name: text('name').notNull(),
   category: text('category').notNull(),
+  quantity: real('quantity').notNull().default(1),
   location: text('location'),
   responsibleId: integer('responsible_id'),
   assignmentType: text('assignment_type').notNull().default('employee'),
@@ -238,6 +239,7 @@ export const employeeHistory = sqliteTable('employee_history', {
 export const inventoryTransfers = sqliteTable('inventory_transfers', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   inventoryId: integer('inventory_id').notNull().references(() => inventory.id),
+  quantity: real('quantity'),
   fromEmployeeId: integer('from_employee_id').references(() => employees.id),
   toEmployeeId: integer('to_employee_id').references(() => employees.id),
   fromAssignmentType: text('from_assignment_type'),

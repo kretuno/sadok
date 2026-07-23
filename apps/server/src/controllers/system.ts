@@ -673,8 +673,11 @@ export const checkRemoteActivation = async (req: Request, res: Response) => {
     const result = await applyLicenseToken(status.token, req);
     return res.json({ ...result, activated: true, activationKey: status.activationKey || null });
   } catch (error) {
-    console.error('Remote activation check failed:', error);
-    return res.status(400).json({ message: error instanceof Error ? error.message : 'Не вдалося перевірити активацію' });
+    return res.json({
+      activated: false,
+      offline: true,
+      message: error instanceof Error ? error.message : 'Сервіс активації недоступний',
+    });
   }
 };
 

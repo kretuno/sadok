@@ -388,7 +388,9 @@ function createWindow() {
     if (isDev) {
       console.log('[Electron] Failed to load dev server. Retrying in 2 seconds...');
       setTimeout(() => {
-        mainWindow.loadURL(startUrl);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.loadURL(startUrl);
+        }
       }, 2000);
     }
   });
@@ -411,7 +413,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-available', (info) => {
     console.log('[Update] Update available:', info.version);
-    if (mainWindow && mainWindow.webContents) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
       mainWindow.webContents.send('sadok:update-available', {
         version: info.version,
         releaseNotes: info.releaseNotes,
@@ -421,20 +423,20 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-not-available', () => {
     console.log('[Update] Update not available.');
-    if (mainWindow && mainWindow.webContents) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
       mainWindow.webContents.send('sadok:update-not-available');
     }
   });
 
   autoUpdater.on('error', (err) => {
     console.error('[Update] Error:', err);
-    if (mainWindow && mainWindow.webContents) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
       mainWindow.webContents.send('sadok:update-error', err.message || String(err));
     }
   });
 
   autoUpdater.on('download-progress', (progressObj) => {
-    if (mainWindow && mainWindow.webContents) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
       mainWindow.webContents.send('sadok:download-progress', {
         percent: progressObj.percent,
         bytesPerSecond: progressObj.bytesPerSecond,
@@ -446,7 +448,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-downloaded', (info) => {
     console.log('[Update] Update downloaded.');
-    if (mainWindow && mainWindow.webContents) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
       mainWindow.webContents.send('sadok:update-downloaded');
     }
   });

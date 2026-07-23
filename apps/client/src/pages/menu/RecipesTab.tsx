@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, FileText, Plus, Printer, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, PackagePlus, Plus, Printer, Trash2 } from 'lucide-react';
 import api from '../../api/axios';
 import CustomSelect from '../../components/ui/CustomSelect';
 import Modal from '../../components/ui/Modal';
@@ -51,6 +51,18 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [recipeDetails, setRecipeDetails] = useState<RecipeDetails | null>(null);
   const [techCardPreview, setTechCardPreview] = useState<RecipeDetails | null>(null);
+
+  // Створення власного продукту
+  const [isCreateProductModalOpen, setIsCreateProductModalOpen] = useState(false);
+  const [targetRowIndex, setTargetRowIndex] = useState<number | null>(null);
+  const [newProductForm, setNewProductForm] = useState({
+    name: '',
+    unit: 'кг',
+    category: '',
+    notes: '',
+  });
+  const [creatingProduct, setCreatingProduct] = useState(false);
+
   const editorRef = useRef<HTMLDivElement | null>(null);
   const techCardFrameRef = useRef<HTMLIFrameElement | null>(null);
   const techCardFrameRootRef = useRef<{ unmount: () => void } | null>(null);
@@ -71,6 +83,69 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
   const closeEditor = () => {
     resetEditor();
     setIsEditorOpen(false);
+  };
+
+  const openCreateProductModal = (rowIndex?: number) => {
+    setTargetRowIndex(rowIndex !== undefined ? rowIndex : null);
+    setNewProductForm({
+      name: '',
+      unit: 'кг',
+      category: '',
+      notes: '',
+    });
+    setIsCreateProductModalOpen(true);
+  };
+
+  const handleCreateProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProductForm.name.trim()) {
+      onError('Введіть назву продукту');
+      return;
+    }
+    if (!newProductForm.unit.trim()) {
+      onError('Вкажіть одиницю виміру');
+      return;
+    }
+
+    setCreatingProduct(true);
+    try {
+      const res = await api.post('/products', {
+        name: newProductForm.name.trim(),
+        unit: newProductForm.unit.trim(),
+        category: newProductForm.category.trim() || undefined,
+        notes: newProductForm.notes.trim() || undefined,
+      });
+
+      const createdProduct = res.data;
+      await onSaved();
+
+      if (targetRowIndex !== null && targetRowIndex >= 0) {
+        setIngredientRows((rows) =>
+          rows.map((row, idx) =>
+            idx === targetRowIndex
+              ? { ...row, sourceType: 'product', sourceId: String(createdProduct.id) }
+              : row
+          )
+        );
+      } else {
+        setIngredientRows((rows) => [
+          ...rows,
+          {
+            sourceType: 'product',
+            sourceId: String(createdProduct.id),
+            ageGroup: 'common',
+            grossWeight: '',
+            netWeight: '',
+          },
+        ]);
+      }
+
+      setIsCreateProductModalOpen(false);
+    } catch (err: any) {
+      onError(err.response?.data?.message || 'Помилка при створенні продукту');
+    } finally {
+      setCreatingProduct(false);
+    }
   };
 
   useEffect(() => {
@@ -239,9 +314,25 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
           <div className="border-t border-warm-100 pt-4">
             <div className="mb-3 flex items-center justify-between">
               <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Інгредієнти</h4>
-              <button type="button" onClick={() => setIngredientRows([...ingredientRows, emptyIngredient()])} className="text-warm-500 hover:text-warm-600" title="Додати інгредієнт">
-                <Plus size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openCreateProductModal()}
+                  className="flex items-center gap-1.5 rounded-xl border border-warm-200 bg-warm-50 px-2.5 py-1 text-xs font-bold text-warm-700 transition hover:bg-warm-100"
+                  title="Створити новий продукт, якщо його немає в довіднику"
+                >
+                  <PackagePlus size={14} className="text-warm-600" />
+                  <span>+ Новий продукт</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIngredientRows([...ingredientRows, emptyIngredient()])}
+                  className="text-warm-500 hover:text-warm-600 p-1"
+                  title="Додати інгредієнт"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
             </div>
             <div className="space-y-3">
               {ingredientRows.map((ingredient, index) => (
@@ -269,12 +360,18 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
                       <Trash2 size={18} />
                     </button>
                   </div>
-                  <CustomSelect
-                    options={ingredient.sourceType === 'product' ? products : recipes.filter((recipe) => recipe.id !== selectedRecipeId)}
-                    value={ingredient.sourceId}
-                    onChange={(value) => setIngredientRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, sourceId: String(value) } : row))}
-                    optionsClassName="max-h-[50vh]"
-                  />
+                  <div>
+                    <CustomSelect
+                      options={ingredient.sourceType === 'product' ? products : recipes.filter((recipe) => recipe.id !== selectedRecipeId)}
+                      value={ingredient.sourceId}
+                      onChange={(value) => setIngredientRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, sourceId: String(value) } : row))}
+                      optionsClassName="max-h-[50vh]"
+                      actionOption={ingredient.sourceType === 'product' ? {
+                        label: '+ Додати свій продукт',
+                        onSelect: () => openCreateProductModal(index),
+                      } : undefined}
+                    />
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     <input
                       placeholder="Брутто, г"
@@ -322,6 +419,107 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, products, onSaved, onE
           <iframe ref={techCardFrameRef} title="Попередній перегляд технологічної карти" className="h-[calc(100vh-19rem)] min-h-96 w-full rounded-2xl bg-white" />
         </div>
       </div>
+    </Modal>
+
+    {/* Модальне вікно створення нового продукту */}
+    <Modal
+      isOpen={isCreateProductModalOpen}
+      onClose={() => setIsCreateProductModalOpen(false)}
+      title="Створення нового продукту"
+      maxWidth="md"
+    >
+      <form onSubmit={handleCreateProductSubmit} className="space-y-4 pt-1">
+        <p className="text-xs text-gray-500">
+          Новий продукт буде збережено до загального довідника складських продуктів та одразу обрано для поточного рецепта.
+        </p>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">
+            Назва продукту <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={newProductForm.name}
+            onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
+            placeholder="Наприклад: Сир Пармезан 45%"
+            className="ui-input text-sm"
+            required
+            autoFocus
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Одиниця виміру <span className="text-red-500">*</span>
+            </label>
+            <CustomSelect
+              options={[
+                { id: 'кг', name: 'кг (кілограм)' },
+                { id: 'г', name: 'г (грам)' },
+                { id: 'л', name: 'л (літр)' },
+                { id: 'мл', name: 'мл (мілілітр)' },
+                { id: 'шт', name: 'шт (штука)' },
+                { id: 'пачка', name: 'пачка' },
+                { id: 'банка', name: 'банка' },
+                { id: 'уп.', name: 'уп. (упаковка)' },
+              ]}
+              value={newProductForm.unit}
+              onChange={(val) => setNewProductForm({ ...newProductForm, unit: String(val) })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Категорія</label>
+            <CustomSelect
+              options={[
+                { id: 'Молочні продукти та масло', name: 'Молочні продукти та масло' },
+                { id: 'М\'ясо та птиця', name: 'М\'ясо та птиця' },
+                { id: 'Риба та морепродукти', name: 'Риба та морепродукти' },
+                { id: 'Овочі та зелень', name: 'Овочі та зелень' },
+                { id: 'Фрукти та ягоди', name: 'Фрукти та ягоди' },
+                { id: 'Хлібобулочні вироби', name: 'Хлібобулочні вироби' },
+                { id: 'Крупи, макарони, бобові', name: 'Крупи, макарони, бобові' },
+                { id: 'Цукор, бакалія, спеції', name: 'Цукор, бакалія, спеції' },
+                { id: 'Напої та соки', name: 'Напої та соки' },
+                { id: 'Жири та олія', name: 'Жири та олія' },
+                { id: 'Яйця', name: 'Яйця' },
+                { id: 'Інше', name: 'Інше' },
+              ]}
+              value={newProductForm.category}
+              onChange={(val) => setNewProductForm({ ...newProductForm, category: String(val) })}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Примітка (необов'язково)</label>
+          <input
+            type="text"
+            value={newProductForm.notes}
+            onChange={(e) => setNewProductForm({ ...newProductForm, notes: e.target.value })}
+            placeholder="Особливості зберігання, ДСТУ тощо"
+            className="ui-input text-xs"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => setIsCreateProductModalOpen(false)}
+            className="ui-button-secondary py-2 px-4 text-xs"
+            disabled={creatingProduct}
+          >
+            Скасувати
+          </button>
+          <button
+            type="submit"
+            className="ui-button-primary py-2 px-4 text-xs shadow-sm"
+            disabled={creatingProduct}
+          >
+            {creatingProduct ? 'Створення...' : 'Створити та вибрати'}
+          </button>
+        </div>
+      </form>
     </Modal>
     </>
   );

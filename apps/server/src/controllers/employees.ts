@@ -130,6 +130,7 @@ export const reassignInventoryItemHandler = async (req: AuthRequest, res: Respon
   try {
     const data = await reassignInventoryItem({
       inventoryId: Number(req.body.inventoryId),
+      quantity: req.body.quantity ? Number(req.body.quantity) : undefined,
       assignmentType: req.body.assignmentType,
       employeeId: req.body.employeeId ? Number(req.body.employeeId) : null,
       groupId: req.body.groupId ? Number(req.body.groupId) : null,

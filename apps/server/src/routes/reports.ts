@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
   getInventorySaldo, 
+  getTmcSaldoReport,
   getMedicationsReport, 
   getTmcReport,
   getMenusReport,
@@ -23,6 +24,7 @@ router.use(authenticateToken);
 const canViewReports = authorizePermission('reports', 'view');
 
 router.get('/saldo', canViewReports, getInventorySaldo);
+router.get('/tmc-saldo', canViewReports, getTmcSaldoReport);
 router.get('/medications', canViewReports, getMedicationsReport);
 router.get('/tmc', canViewReports, getTmcReport);
 router.get('/menus', canViewReports, getMenusReport);

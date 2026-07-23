@@ -33,6 +33,7 @@ test('schema migrations apply once and record their version', () => {
     { version: 3, name: 'license_exact_expiry' },
     { version: 4, name: 'optional_inventory_control' },
     { version: 5, name: 'menu_stock_movement_links' },
+    { version: 6, name: 'inventory_quantity_and_transfers' },
   ]);
   assert.ok(settingsColumns.some((column) => column.name === 'license_expires_at'));
   assert.ok(settingsColumns.some((column) => column.name === 'inventory_control_enabled'));
@@ -73,7 +74,7 @@ test('schema migrations accept databases already containing the target column', 
   const count = database.prepare('SELECT COUNT(*) AS count FROM sadok_schema_migrations').get() as {
     count: number;
   };
-  assert.equal(count.count, 5);
+  assert.equal(count.count, 6);
   database.close();
 });
 
@@ -133,7 +134,8 @@ test('unknown applied migration versions stop startup', () => {
     INSERT INTO sadok_schema_migrations VALUES (3, 'license_exact_expiry', 0);
     INSERT INTO sadok_schema_migrations VALUES (4, 'optional_inventory_control', 0);
     INSERT INTO sadok_schema_migrations VALUES (5, 'menu_stock_movement_links', 0);
-    INSERT INTO sadok_schema_migrations VALUES (6, 'unknown_future_migration', 0);
+    INSERT INTO sadok_schema_migrations VALUES (6, 'inventory_quantity_and_transfers', 0);
+    INSERT INTO sadok_schema_migrations VALUES (7, 'unknown_future_migration', 0);
   `);
 
   assert.throws(() => runSchemaMigrations(database), /expected no additional migration/);

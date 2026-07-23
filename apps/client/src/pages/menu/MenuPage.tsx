@@ -4,6 +4,7 @@ import {
   BookOpen,
   Calendar as CalendarIcon,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChefHat,
@@ -11,6 +12,7 @@ import {
   Clock,
   Coffee,
   Plus,
+  Printer,
   RotateCcw,
   Save,
   Settings2,
@@ -102,6 +104,18 @@ const MenuPage: React.FC = () => {
   const [isManualRestockModalOpen, setIsManualRestockModalOpen] = useState(false);
   const [printPreview, setPrintPreview] = useState<{ type: 'parents' | 'kitchen' | 'requirement'; data: any } | null>(null);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
+  const [isPrintDropdownOpen, setIsPrintDropdownOpen] = useState(false);
+  const printDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (printDropdownRef.current && !printDropdownRef.current.contains(event.target as Node)) {
+        setIsPrintDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Копіювання меню з іншої дати
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
@@ -1579,17 +1593,54 @@ const MenuPage: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {canPrintMenu && (
-                    <>
-                      <button onClick={() => handlePrint('parents')} className="ui-button-secondary border-emerald-200 px-4 text-emerald-700 hover:bg-emerald-50">
-                        <BookOpen size={16} /> Звітне меню
+                    <div className="relative" ref={printDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsPrintDropdownOpen(!isPrintDropdownOpen)}
+                        className="ui-button-secondary border-emerald-200 px-4 text-emerald-700 hover:bg-emerald-50 flex items-center gap-1.5"
+                      >
+                        <Printer size={16} />
+                        <span>Друкувати...</span>
+                        <ChevronDown size={14} className={isPrintDropdownOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
                       </button>
-                      <button onClick={() => handlePrint('kitchen')} className="ui-button-secondary border-orange-200 px-4 text-orange-700 hover:bg-orange-50">
-                        <Utensils size={16} /> Розкладка кухні
-                      </button>
-                      <button onClick={() => handlePrint('requirement')} className="ui-button-secondary border-purple-200 px-4 text-purple-700 hover:bg-purple-50">
-                        <FileText size={16} /> Меню-вимога
-                      </button>
-                    </>
+                      {isPrintDropdownOpen && (
+                        <div className="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-warm-100 bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsPrintDropdownOpen(false);
+                              handlePrint('parents');
+                            }}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 transition"
+                          >
+                            <BookOpen size={15} className="text-emerald-600 shrink-0" />
+                            <span>Звітне меню (для батьків)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsPrintDropdownOpen(false);
+                              handlePrint('kitchen');
+                            }}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 hover:bg-orange-50 hover:text-orange-800 transition"
+                          >
+                            <Utensils size={15} className="text-orange-600 shrink-0" />
+                            <span>Розкладка кухні</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsPrintDropdownOpen(false);
+                              handlePrint('requirement');
+                            }}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-purple-800 transition"
+                          >
+                            <FileText size={15} className="text-purple-600 shrink-0" />
+                            <span>Меню-вимога</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                   {!menuForm.isConfirmed && (
                     <button

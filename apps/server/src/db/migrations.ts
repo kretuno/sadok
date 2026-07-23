@@ -122,6 +122,27 @@ export const schemaMigrations: readonly SchemaMigration[] = [
       `);
     },
   },
+  {
+    version: 6,
+    name: 'inventory_quantity_and_transfers',
+    up(database) {
+      if (tableExists(database, 'inventory')) {
+        if (!columnExists(database, 'inventory', 'quantity')) {
+          database.exec("ALTER TABLE inventory ADD COLUMN quantity REAL NOT NULL DEFAULT 1");
+        }
+        try {
+          database.exec("DROP INDEX IF EXISTS inventory_inventory_number_unique");
+        } catch {
+          // Index optional
+        }
+      }
+      if (tableExists(database, 'inventory_transfers')) {
+        if (!columnExists(database, 'inventory_transfers', 'quantity')) {
+          database.exec("ALTER TABLE inventory_transfers ADD COLUMN quantity REAL");
+        }
+      }
+    },
+  },
 ];
 
 const assertMigrationSequence = (migrations: readonly SchemaMigration[]) => {

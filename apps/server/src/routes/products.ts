@@ -21,7 +21,14 @@ router.get(
   ),
   getProducts
 );
-router.post('/', authorizePermission('inventory', 'edit'), createProductHandler);
+router.post(
+  '/',
+  authorizeAnyPermission(
+    { module: 'inventory', action: 'edit' },
+    { module: 'menu', action: 'edit' }
+  ),
+  createProductHandler
+);
 router.get('/:id/card', authorizePermission('inventory', 'view'), getProductCardHandler);
 router.post(
   '/:id/manual-restock',

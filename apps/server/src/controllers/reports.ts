@@ -39,56 +39,174 @@ export const getInventorySaldo = async (req: Request, res: Response) => {
     const { startDate, endDate } = parseDates(start, end);
 
     // Отримуємо всі продукти
-    const allProducts = await db.select().from(products);
+    const allProducts = await db.select().from(products).where(eq(products.isArchived, false));
     
     // Отримуємо всі рухи до кінця періоду
     const allMovements = await db.select().from(stockMovements)
       .where(lte(stockMovements.date, endDate))
       .orderBy(asc(stockMovements.date));
 
-    const report = allProducts.map(product => {
-      const pMovements = allMovements.filter(m => m.productId === product.id);
+    const report = allProducts.map((product) => {
+      const pMovements = allMovements.filter((m) => m.productId === product.id);
       
       let startStock = 0;
+      let startCost = 0;
       let incoming = 0;
+      let incomingCost = 0;
       let outgoing = 0;
+      let outgoingCost = 0;
       
-      pMovements.forEach(m => {
+      pMovements.forEach((m) => {
         const mDate = new Date(m.date!);
+        const price = m.priceAtMoment || product.currentPrice || 0;
+        const sum = m.quantity * price;
+
         if (mDate < startDate) {
           // Рухи до початку періоду формують вхідний залишок
-          if (m.type === 'in') startStock += m.quantity;
-          else if (m.type === 'out') startStock -= m.quantity;
-          else if (m.type === 'adjust') startStock += m.quantity;
+          if (m.type === 'in') {
+            startStock += m.quantity;
+            startCost += sum;
+          } else if (m.type === 'out') {
+            startStock -= m.quantity;
+            startCost -= sum;
+          } else if (m.type === 'adjust') {
+            startStock += m.quantity;
+            startCost += sum;
+          }
         } else {
           // Рухи в рамках періоду
           if (m.type === 'in') {
             incoming += m.quantity;
+            incomingCost += sum;
           } else if (m.type === 'out') {
             outgoing += m.quantity;
+            outgoingCost += sum;
           } else if (m.type === 'adjust') {
-            if (m.quantity > 0) incoming += m.quantity;
-            else outgoing += Math.abs(m.quantity);
+            if (m.quantity > 0) {
+              incoming += m.quantity;
+              incomingCost += sum;
+            } else {
+              outgoing += Math.abs(m.quantity);
+              outgoingCost += Math.abs(sum);
+            }
           }
         }
       });
       
-      const endStock = startStock + incoming - outgoing;
+      if (startCost < 0) startCost = 0;
+      if (startStock < 0) startStock = 0;
+      const endStock = Math.max(0, startStock + incoming - outgoing);
+      const endCost = Math.max(0, startCost + incomingCost - outgoingCost);
+      const unitPrice = product.currentPrice || (endStock > 0 ? endCost / endStock : 0);
 
       return {
         id: product.id,
         name: product.name,
         unit: product.unit,
-        startStock: Number(startStock.toFixed(2)),
-        incoming: Number(incoming.toFixed(2)),
-        outgoing: Number(outgoing.toFixed(2)),
-        endStock: Number(endStock.toFixed(2)),
+        price: Number(unitPrice.toFixed(2)),
+        startStock: Number(startStock.toFixed(3)),
+        startCost: Number(startCost.toFixed(2)),
+        incoming: Number(incoming.toFixed(3)),
+        incomingCost: Number(incomingCost.toFixed(2)),
+        outgoing: Number(outgoing.toFixed(3)),
+        outgoingCost: Number(outgoingCost.toFixed(2)),
+        endStock: Number(endStock.toFixed(3)),
+        endCost: Number(endCost.toFixed(2)),
       };
     });
 
     res.json(report);
   } catch (error) {
     console.error('Error generating inventory saldo report:', error);
+    res.status(500).json({ message: 'Внутрішня помилка сервера' });
+  }
+};
+
+export const getTmcSaldoReport = async (req: Request, res: Response) => {
+  try {
+    const { start, end } = req.query;
+    const { startDate, endDate } = parseDates(start, end);
+
+    const allInventory = await db.select({
+      id: inventory.id,
+      inventoryNumber: inventory.inventoryNumber,
+      name: inventory.name,
+      category: inventory.category,
+      quantity: inventory.quantity,
+      initialValue: inventory.initialValue,
+      status: inventory.status,
+      arrivalDate: inventory.arrivalDate,
+      location: inventory.location,
+      assignmentType: inventory.assignmentType,
+      employeeName: employees.fullName,
+      groupName: childGroups.name,
+      outdoorArea: inventory.outdoorArea,
+    })
+    .from(inventory)
+    .leftJoin(employees, eq(inventory.responsibleId, employees.id))
+    .leftJoin(childGroups, eq(inventory.groupId, childGroups.id));
+
+    const report = allInventory.map((item) => {
+      const arrDate = item.arrivalDate ? new Date(item.arrivalDate) : null;
+      const unitPrice = item.initialValue || 0;
+      const q = item.quantity || 1;
+
+      let startQty = 0;
+      let startSum = 0;
+      let inQty = 0;
+      let inSum = 0;
+      let outQty = 0;
+      let outSum = 0;
+      let endQty = 0;
+      let endSum = 0;
+
+      if (!arrDate || arrDate < startDate) {
+        if (item.status === 'written_off' || item.status === 'written-off') {
+          startQty = 0;
+          startSum = 0;
+          endQty = 0;
+          endSum = 0;
+        } else {
+          startQty = q;
+          startSum = q * unitPrice;
+          endQty = q;
+          endSum = q * unitPrice;
+        }
+      } else if (arrDate >= startDate && arrDate <= endDate) {
+        inQty = q;
+        inSum = q * unitPrice;
+        endQty = q;
+        endSum = q * unitPrice;
+      }
+
+      let placement = 'Склад';
+      if (item.assignmentType === 'employee') placement = item.employeeName || 'Співробітник';
+      else if (item.assignmentType === 'group') placement = item.groupName ? `Група: ${item.groupName}` : 'Група';
+      else if (item.assignmentType === 'outdoor') placement = item.outdoorArea ? `Територія: ${item.outdoorArea}` : 'Територія садка';
+      else if (item.location) placement = `Склад: ${item.location}`;
+
+      return {
+        id: item.id,
+        inventoryNumber: item.inventoryNumber,
+        name: item.name,
+        category: item.category || '—',
+        unitPrice: Number(unitPrice.toFixed(2)),
+        startQty,
+        startSum: Number(startSum.toFixed(2)),
+        inQty,
+        inSum: Number(inSum.toFixed(2)),
+        outQty,
+        outSum: Number(outSum.toFixed(2)),
+        endQty,
+        endSum: Number(endSum.toFixed(2)),
+        placement,
+        status: item.status,
+      };
+    });
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error generating TMC saldo report:', error);
     res.status(500).json({ message: 'Внутрішня помилка сервера' });
   }
 };

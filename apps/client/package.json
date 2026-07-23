@@ -1,11 +1,11 @@
 {
   "name": "client",
   "private": true,
-  "version": "1.1.7",
+  "version": "1.1.13",
   "type": "module",
   "scripts": {
     "test": "node --experimental-strip-types --test test/*.test.ts",
-    "dev": "vite --configLoader native",
+    "dev": "vite --configLoader native --port 5173 --strictPort",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -8,6 +8,7 @@ import CustomSelect from '../../components/ui/CustomSelect';
 
 type ReportType = 
   | 'saldo' 
+  | 'tmc-saldo'
   | 'tmc' 
   | 'menus' 
   | 'detailed-menus'
@@ -47,6 +48,7 @@ const ReportsPage: React.FC = () => {
 
   const reportOptions = [
     { id: 'saldo', name: t('report_saldo') },
+    { id: 'tmc-saldo', name: t('report_tmc_saldo') },
     { id: 'spent-products', name: t('report_spent_products') },
     { id: 'detailed-menus', name: t('report_detailed_menus') },
     { id: 'attendance', name: t('report_attendance') },
@@ -63,6 +65,7 @@ const ReportsPage: React.FC = () => {
 
   const reportTitles: Record<ReportType, string> = {
     saldo: t('report_title_saldo'),
+    'tmc-saldo': t('report_title_tmc_saldo'),
     children: t('report_title_children'),
     sick: t('report_title_sick'),
     psychology: t('report_title_psychology'),
@@ -78,7 +81,7 @@ const ReportsPage: React.FC = () => {
   };
 
   const needsDateFilter = [
-    'saldo', 'menus', 'detailed-menus', 'psychology', 
+    'saldo', 'tmc-saldo', 'menus', 'detailed-menus', 'psychology',
     'attendance', 'spent-products', 'spent-medications', 'utilities', 'audit'
   ].includes(reportType);
 
@@ -176,39 +179,178 @@ const ReportsPage: React.FC = () => {
     if (visibleData.length === 0) return <div className="p-10 text-center text-gray-400">За вашим пошуком нічого не знайдено</div>;
 
     switch (reportType) {
-      case 'saldo':
+      case 'saldo': {
+        const totalStartCost = visibleData.reduce((sum, r) => sum + (r.startCost || 0), 0);
+        const totalIncomingCost = visibleData.reduce((sum, r) => sum + (r.incomingCost || 0), 0);
+        const totalOutgoingCost = visibleData.reduce((sum, r) => sum + (r.outgoingCost || 0), 0);
+        const totalEndCost = visibleData.reduce((sum, r) => sum + (r.endCost || 0), 0);
+
+        return (
+          <table className="w-full text-left text-xs border-collapse font-sans">
+            <thead>
+              <tr className="bg-gray-100/80 text-gray-800 font-bold border-b border-gray-300 text-center">
+                <th rowSpan={2} className="p-2 border border-gray-300 w-8">№ з/п</th>
+                <th rowSpan={2} className="p-2 border border-gray-300 text-left">Найменування продукту харчування</th>
+                <th rowSpan={2} className="p-2 border border-gray-300 w-12">Од. вим.</th>
+                <th rowSpan={2} className="p-2 border border-gray-300 w-20 text-right">Ціна, грн</th>
+                <th colSpan={2} className="p-2 border border-gray-300">Залишок на початок</th>
+                <th colSpan={2} className="p-2 border border-gray-300">Надходження (Прихід)</th>
+                <th colSpan={2} className="p-2 border border-gray-300">Витрата (Видаток)</th>
+                <th colSpan={2} className="p-2 border border-gray-300">Залишок на кінець</th>
+              </tr>
+              <tr className="bg-gray-100/80 text-gray-800 font-bold border-b border-gray-300 text-center">
+                <th className="p-1.5 border border-gray-300 w-20">К-сть</th>
+                <th className="p-1.5 border border-gray-300 w-24">Сума, грн</th>
+                <th className="p-1.5 border border-gray-300 w-20">К-сть</th>
+                <th className="p-1.5 border border-gray-300 w-24">Сума, грн</th>
+                <th className="p-1.5 border border-gray-300 w-20">К-сть</th>
+                <th className="p-1.5 border border-gray-300 w-24">Сума, грн</th>
+                <th className="p-1.5 border border-gray-300 w-20">К-сть</th>
+                <th className="p-1.5 border border-gray-300 w-24">Сума, грн</th>
+              </tr>
+              <tr className="bg-gray-200/60 text-gray-500 text-[10px] text-center font-mono">
+                <th className="p-1 border border-gray-300">1</th>
+                <th className="p-1 border border-gray-300">2</th>
+                <th className="p-1 border border-gray-300">3</th>
+                <th className="p-1 border border-gray-300">4</th>
+                <th className="p-1 border border-gray-300">5</th>
+                <th className="p-1 border border-gray-300">6</th>
+                <th className="p-1 border border-gray-300">7</th>
+                <th className="p-1 border border-gray-300">8</th>
+                <th className="p-1 border border-gray-300">9</th>
+                <th className="p-1 border border-gray-300">10</th>
+                <th className="p-1 border border-gray-300">11</th>
+                <th className="p-1 border border-gray-300">12</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {visibleData.map((row, index) => (
+                <tr key={row.id} className="hover:bg-warm-50/50">
+                  <td className="p-2 border border-gray-200 text-center font-mono text-gray-500">{index + 1}</td>
+                  <td className="p-2 border border-gray-200 font-bold text-gray-900">{row.name}</td>
+                  <td className="p-2 border border-gray-200 text-center text-gray-600">{row.unit}</td>
+                  <td className="p-2 border border-gray-200 text-right font-semibold text-gray-700">{formatMoneyValue(row.price)}</td>
+                  <td className="p-2 border border-gray-200 text-right font-medium text-gray-700">{Number(row.startStock || 0).toFixed(3)}</td>
+                  <td className="p-2 border border-gray-200 text-right font-semibold text-gray-800">{formatMoneyValue(row.startCost)}</td>
+                  <td className="p-2 border border-gray-200 text-right font-medium text-emerald-700">{Number(row.incoming || 0) > 0 ? Number(row.incoming).toFixed(3) : '—'}</td>
+                  <td className="p-2 border border-gray-200 text-right font-bold text-emerald-800">{Number(row.incomingCost || 0) > 0 ? formatMoneyValue(row.incomingCost) : '—'}</td>
+                  <td className="p-2 border border-gray-200 text-right font-medium text-rose-700">{Number(row.outgoing || 0) > 0 ? Number(row.outgoing).toFixed(3) : '—'}</td>
+                  <td className="p-2 border border-gray-200 text-right font-bold text-rose-800">{Number(row.outgoingCost || 0) > 0 ? formatMoneyValue(row.outgoingCost) : '—'}</td>
+                  <td className="p-2 border border-gray-200 text-right font-black text-gray-900">{Number(row.endStock || 0).toFixed(3)}</td>
+                  <td className="p-2 border border-gray-200 text-right font-black text-warm-900">{formatMoneyValue(row.endCost)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-gray-100 font-black text-gray-900 uppercase">
+                <td colSpan={5} className="p-2.5 border border-gray-300 text-right">
+                  ВСЬОГО ЗА ЗВІТОМ:
+                </td>
+                <td className="p-2.5 border border-gray-300 text-right text-gray-900">{formatMoneyValue(totalStartCost)}</td>
+                <td className="p-2.5 border border-gray-300"></td>
+                <td className="p-2.5 border border-gray-300 text-right text-emerald-800">{formatMoneyValue(totalIncomingCost)}</td>
+                <td className="p-2.5 border border-gray-300"></td>
+                <td className="p-2.5 border border-gray-300 text-right text-rose-800">{formatMoneyValue(totalOutgoingCost)}</td>
+                <td className="p-2.5 border border-gray-300"></td>
+                <td className="p-2.5 border border-gray-300 text-right text-warm-900">{formatMoneyValue(totalEndCost)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        );
+      }
+
+      case 'tmc-saldo': {
+        const totalStartSum = visibleData.reduce((sum, r) => sum + (r.startSum || 0), 0);
+        const totalInSum = visibleData.reduce((sum, r) => sum + (r.inSum || 0), 0);
+        const totalOutSum = visibleData.reduce((sum, r) => sum + (r.outSum || 0), 0);
+        const totalEndSum = visibleData.reduce((sum, r) => sum + (r.endSum || 0), 0);
+
+        return (
+          <table className="w-full text-left text-xs border-collapse font-sans">
+            <thead>
+              <tr className="bg-gray-100/80 text-gray-800 font-bold border-b border-gray-300 text-center">
+                <th rowSpan={2} className="p-2 border border-gray-300 w-8">№ з/п</th>
+                <th rowSpan={2} className="p-2 border border-gray-300 w-24">Інв. №</th>
+                <th rowSpan={2} className="p-2 border border-gray-300 text-left">Найменування майна / ТМЦ</th>
+                <th rowSpan={2} className="p-2 border border-gray-300 w-28">Категорія</th>
+                <th rowSpan={2} className="p-2 border border-gray-300">Прив’язка / Локація</th>
+                <th rowSpan={2} className="p-2 border border-gray-300 w-20 text-right">Ціна за 1 шт, грн</th>
+                <th colSpan={2} className="p-2 border border-gray-300">Залишок на початок</th>
+                <th colSpan={2} className="p-2 border border-gray-300">Надходження</th>
+                <th colSpan={2} className="p-2 border border-gray-300">Вибуття / Списання</th>
+                <th colSpan={2} className="p-2 border border-gray-300">Залишок на кінець</th>
+              </tr>
+              <tr className="bg-gray-100/80 text-gray-800 font-bold border-b border-gray-300 text-center">
+                <th className="p-1.5 border border-gray-300 w-16">К-сть</th>
+                <th className="p-1.5 border border-gray-300 w-24">Сума, грн</th>
+                <th className="p-1.5 border border-gray-300 w-16">К-сть</th>
+                <th className="p-1.5 border border-gray-300 w-24">Сума, грн</th>
+                <th className="p-1.5 border border-gray-300 w-16">К-сть</th>
+                <th className="p-1.5 border border-gray-300 w-24">Сума, грн</th>
+                <th className="p-1.5 border border-gray-300 w-16">К-сть</th>
+                <th className="p-1.5 border border-gray-300 w-24">Сума, грн</th>
+              </tr>
+              <tr className="bg-gray-200/60 text-gray-500 text-[10px] text-center font-mono">
+                <th className="p-1 border border-gray-300">1</th>
+                <th className="p-1 border border-gray-300">2</th>
+                <th className="p-1 border border-gray-300">3</th>
+                <th className="p-1 border border-gray-300">4</th>
+                <th className="p-1 border border-gray-300">5</th>
+                <th className="p-1 border border-gray-300">6</th>
+                <th className="p-1 border border-gray-300">7</th>
+                <th className="p-1 border border-gray-300">8</th>
+                <th className="p-1 border border-gray-300">9</th>
+                <th className="p-1 border border-gray-300">10</th>
+                <th className="p-1 border border-gray-300">11</th>
+                <th className="p-1 border border-gray-300">12</th>
+                <th className="p-1 border border-gray-300">13</th>
+                <th className="p-1 border border-gray-300">14</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {visibleData.map((row, index) => (
+                <tr key={row.id} className="hover:bg-warm-50/50">
+                  <td className="p-2 border border-gray-200 text-center font-mono text-gray-500">{index + 1}</td>
+                  <td className="p-2 border border-gray-200 font-mono font-bold text-center text-warm-800">{row.inventoryNumber}</td>
+                  <td className="p-2 border border-gray-200 font-bold text-gray-900">{row.name}</td>
+                  <td className="p-2 border border-gray-200 text-gray-600">{row.category}</td>
+                  <td className="p-2 border border-gray-200 text-gray-700">{row.placement}</td>
+                  <td className="p-2 border border-gray-200 text-right font-semibold text-gray-700">{formatMoneyValue(row.unitPrice)}</td>
+                  <td className="p-2 border border-gray-200 text-center font-medium text-gray-700">{row.startQty || '—'}</td>
+                  <td className="p-2 border border-gray-200 text-right font-semibold text-gray-800">{row.startSum ? formatMoneyValue(row.startSum) : '—'}</td>
+                  <td className="p-2 border border-gray-200 text-center font-medium text-emerald-700">{row.inQty || '—'}</td>
+                  <td className="p-2 border border-gray-200 text-right font-bold text-emerald-800">{row.inSum ? formatMoneyValue(row.inSum) : '—'}</td>
+                  <td className="p-2 border border-gray-200 text-center font-medium text-rose-700">{row.outQty || '—'}</td>
+                  <td className="p-2 border border-gray-200 text-right font-bold text-rose-800">{row.outSum ? formatMoneyValue(row.outSum) : '—'}</td>
+                  <td className="p-2 border border-gray-200 text-center font-black text-gray-900">{row.endQty || '—'}</td>
+                  <td className="p-2 border border-gray-200 text-right font-black text-warm-900">{formatMoneyValue(row.endSum)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-gray-100 font-black text-gray-900 uppercase">
+                <td colSpan={7} className="p-2.5 border border-gray-300 text-right">
+                  ВСЬОГО ЗА ЗВІТОМ:
+                </td>
+                <td className="p-2.5 border border-gray-300 text-right text-gray-900">{formatMoneyValue(totalStartSum)}</td>
+                <td className="p-2.5 border border-gray-300"></td>
+                <td className="p-2.5 border border-gray-300 text-right text-emerald-800">{formatMoneyValue(totalInSum)}</td>
+                <td className="p-2.5 border border-gray-300"></td>
+                <td className="p-2.5 border border-gray-300 text-right text-rose-800">{formatMoneyValue(totalOutSum)}</td>
+                <td className="p-2.5 border border-gray-300"></td>
+                <td className="p-2.5 border border-gray-300 text-right text-warm-900">{formatMoneyValue(totalEndSum)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        );
+      }
+
+      case 'children':
         return (
           <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
-                <th className="p-3 font-bold text-gray-600 border-b">Продукт</th>
-                <th className="p-3 font-bold text-gray-600 border-b">Од.</th>
-                <th className="p-3 font-bold text-gray-600 border-b text-right">Початковий залишок</th>
-                <th className="p-3 font-bold text-green-600 border-b text-right">Прихід</th>
-                <th className="p-3 font-bold text-red-600 border-b text-right">Видаток</th>
-                <th className="p-3 font-bold text-gray-800 border-b text-right">Кінцевий залишок</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
-                <tr key={row.id}>
-                  <td className="p-3 font-bold text-gray-800">{row.name}</td>
-                  <td className="p-3 text-gray-500">{row.unit}</td>
-                  <td className="p-3 font-semibold text-right text-gray-600">{Number(row.startStock || 0).toFixed(2)}</td>
-                  <td className="p-3 font-bold text-right text-green-600">{Number(row.incoming || 0) > 0 ? `+${Number(row.incoming || 0).toFixed(2)}` : '0.00'}</td>
-                  <td className="p-3 font-bold text-right text-red-600">{Number(row.outgoing || 0) > 0 ? `-${Number(row.outgoing || 0).toFixed(2)}` : '0.00'}</td>
-                  <td className="p-3 font-black text-right text-gray-800">{Number(row.endStock || 0).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        );
-
-      case 'children':
-        return (
-          <table className="w-full text-left text-sm print:text-xs">
-            <thead>
-              <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">ПІБ Дитини</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Група</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-center">Дата народження</th>
@@ -216,8 +358,9 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-black text-gray-800">{row.fullName}</td>
                   <td className="p-3 text-gray-600 font-bold">{row.groupName || '—'}</td>
                   <td className="p-3 text-center text-gray-500">{new Date(row.birthDate).toLocaleDateString('uk-UA')}</td>
@@ -234,18 +377,20 @@ const ReportsPage: React.FC = () => {
 
       case 'sick':
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">ПІБ Дитини</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Діагноз</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-center">Дата початку</th>
-                <th className="p-3 font-bold text-gray-600 border-b text-center">Прогноз</th>
+                <th className="p-3 font-bold text-gray-600 border-b text-center">Прогноз / Стан</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-black text-gray-800">{row.childName}</td>
                   <td className="p-3 text-red-600 font-bold">{row.diagnosis}</td>
                   <td className="p-3 text-center text-gray-500">{new Date(row.startDate).toLocaleDateString('uk-UA')}</td>
@@ -260,9 +405,10 @@ const ReportsPage: React.FC = () => {
 
       case 'attendance':
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">ПІБ Дитини</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-center">Всього днів</th>
                 <th className="p-3 font-bold text-green-600 border-b text-center">Присутній (+)</th>
@@ -273,7 +419,9 @@ const ReportsPage: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {visibleData.map((row, idx) => (
                 <tr key={idx}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-black text-gray-800">{row.name}</td>
+                  <td className="p-3 text-center font-bold text-gray-700">{row.total}</td>
                   <td className="p-3 text-center font-bold text-green-600">{row.present}</td>
                   <td className="p-3 text-center font-bold text-red-600">{row.absent}</td>
                   <td className="p-3 text-center font-black text-gray-800">
@@ -287,9 +435,10 @@ const ReportsPage: React.FC = () => {
 
       case 'psychology':
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Дитина</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Тип роботи</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Тема / Результат</th>
@@ -297,8 +446,9 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-black text-gray-800">{row.childName || 'Загальна'}</td>
                   <td className="p-3 font-bold text-orange-600 uppercase text-[10px]">{row.type}</td>
                   <td className="p-3 text-gray-600 font-medium">
@@ -312,11 +462,13 @@ const ReportsPage: React.FC = () => {
           </table>
         );
 
-      case 'spent-products':
+      case 'spent-products': {
+        const grandTotalCost = visibleData.reduce((sum, r) => sum + (r.totalCost || 0), 0);
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Найменування продукту</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-center">Використано (К-сть)</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Одиниці</th>
@@ -324,23 +476,32 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-black text-gray-800">{row.name}</td>
                   <td className="p-3 text-center font-bold text-red-600">{Number(row.totalQuantity || 0).toFixed(3)}</td>
                   <td className="p-3 text-gray-500">{row.unit}</td>
-                  <td className="p-3 text-right font-black text-gray-800">{row.totalCost?.toFixed(2) || '0.00'} грн</td>
+                  <td className="p-3 text-right font-black text-gray-800">{formatMoneyValue(row.totalCost)}</td>
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="bg-gray-100 font-black text-gray-900 uppercase">
+                <td colSpan={4} className="p-3 text-right">РАЗОМ ВИКОРИСТАНО НА СУМУ:</td>
+                <td className="p-3 text-right text-gray-900">{formatMoneyValue(grandTotalCost)}</td>
+              </tr>
+            </tfoot>
           </table>
         );
+      }
 
       case 'spent-medications':
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Препарат</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-center">К-сть</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Для кого / Причина</th>
@@ -348,8 +509,9 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-black text-gray-800">{row.medName}</td>
                   <td className="p-3 text-center font-bold text-red-600">{row.quantity} {row.unit}</td>
                   <td className="p-3 text-gray-600">
@@ -363,11 +525,13 @@ const ReportsPage: React.FC = () => {
           </table>
         );
 
-      case 'utilities':
+      case 'utilities': {
+        const totalUtilCost = visibleData.reduce((sum, r) => sum + (r.estimatedCost || 0), 0);
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Лічильник</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Тип / Од.</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-right">Початкові показання</th>
@@ -378,8 +542,9 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-black text-gray-800">
                     <div>{row.meterName}</div>
                     <div className="text-[10px] font-medium text-gray-400">{row.location || 'Без локації'}</div>
@@ -396,18 +561,26 @@ const ReportsPage: React.FC = () => {
                       ? `${Number(row.tariffPrice).toFixed(4)} грн`
                       : '—'}
                   </td>
-                  <td className="p-3 text-right font-black text-gray-800">{Number(row.estimatedCost || 0).toFixed(2)} грн</td>
+                  <td className="p-3 text-right font-black text-gray-800">{formatMoneyValue(row.estimatedCost)}</td>
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="bg-gray-100 font-black text-gray-900 uppercase">
+                <td colSpan={7} className="p-3 text-right">РАЗОМ ДО СТРАТИ:</td>
+                <td className="p-3 text-right text-gray-900">{formatMoneyValue(totalUtilCost)}</td>
+              </tr>
+            </tfoot>
           </table>
         );
+      }
 
       case 'audit':
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">{t('audit_time')}</th>
                 <th className="p-3 font-bold text-gray-600 border-b">{t('audit_user')}</th>
                 <th className="p-3 font-bold text-gray-600 border-b">{t('audit_action')}</th>
@@ -417,8 +590,9 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-semibold text-gray-700 whitespace-nowrap">
                     {new Date(row.timestamp).toLocaleString('uk-UA')}
                   </td>
@@ -449,7 +623,7 @@ const ReportsPage: React.FC = () => {
 
       case 'detailed-menus':
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
                 <th className="p-3 font-bold text-gray-600 border-b">Дата</th>
@@ -499,9 +673,10 @@ const ReportsPage: React.FC = () => {
 
       case 'medications':
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Препарат</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-right">Залишок</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-center">Термін придатності</th>
@@ -509,12 +684,13 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => {
+              {visibleData.map((row, idx) => {
                 const isLow = Number(row.quantity || 0) <= 0;
                 const isExpired = row.expiryDate && new Date(row.expiryDate).getTime() < Date.now();
 
                 return (
                   <tr key={row.id}>
+                    <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                     <td className="p-3 font-bold text-gray-800">{row.name}</td>
                     <td className={`p-3 text-right font-black ${isLow ? 'text-red-600' : 'text-gray-800'}`}>
                       {Number(row.quantity || 0).toFixed(2)} {row.unit}
@@ -530,11 +706,13 @@ const ReportsPage: React.FC = () => {
           </table>
         );
 
-      case 'tmc':
+      case 'tmc': {
+        const totalTmcVal = visibleData.reduce((sum, r) => sum + (r.initialValue || 0), 0);
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Інвентарний №</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Найменування</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Категорія</th>
@@ -545,9 +723,10 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
-                  <td className="p-3 font-mono text-gray-500">{row.inventoryNumber}</td>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
+                  <td className="p-3 font-mono font-bold text-warm-800">{row.inventoryNumber}</td>
                   <td className="p-3">
                     <div className="font-bold text-gray-800">{row.name}</div>
                     <div className="text-xs text-gray-400">
@@ -563,19 +742,27 @@ const ReportsPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-3 text-right font-bold text-gray-800">
-                    {row.initialValue !== null && row.initialValue !== undefined ? `${Number(row.initialValue).toFixed(2)} грн` : '—'}
+                    {row.initialValue !== null && row.initialValue !== undefined ? formatMoneyValue(row.initialValue) : '—'}
                   </td>
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="bg-gray-100 font-black text-gray-900 uppercase">
+                <td colSpan={7} className="p-3 text-right">ЗАГАЛЬНА ПЕРВІСНА ВАРТІСТЬ:</td>
+                <td className="p-3 text-right text-gray-900">{formatMoneyValue(totalTmcVal)}</td>
+              </tr>
+            </tfoot>
           </table>
         );
+      }
 
       case 'menus':
         return (
-          <table className="w-full text-left text-sm print:text-xs">
+          <table className="w-full text-left text-sm print:text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100/50">
+                <th className="p-3 font-bold text-gray-600 border-b w-10 text-center">№</th>
                 <th className="p-3 font-bold text-gray-600 border-b">Дата</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-right">0-4</th>
                 <th className="p-3 font-bold text-gray-600 border-b text-right">5-7</th>
@@ -585,8 +772,9 @@ const ReportsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleData.map((row) => (
+              {visibleData.map((row, idx) => (
                 <tr key={row.id}>
+                  <td className="p-3 text-center text-gray-500 font-mono">{idx + 1}</td>
                   <td className="p-3 font-bold text-gray-800">{new Date(row.date).toLocaleDateString('uk-UA')}</td>
                   <td className="p-3 text-right font-semibold text-gray-600">{row.count0_4 ?? '—'}</td>
                   <td className="p-3 text-right font-semibold text-gray-600">{row.count5_7 ?? '—'}</td>
@@ -632,7 +820,7 @@ const ReportsPage: React.FC = () => {
               <FileText className="text-warm-500" />
               {t('reports_generator')}
             </h1>
-            <p className="mt-1 text-sm text-gray-500">Сформуйте, перевірте та підготуйте дані до друку або експорту.</p>
+            <p className="mt-1 text-sm text-gray-500">Сформуйте, перевірте та підготуйте офіційну звітність до друку або експорту.</p>
           </div>
           {canPrintReports && (
             <div className="flex flex-wrap gap-3">
@@ -651,7 +839,7 @@ const ReportsPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap gap-4 items-end">
-          <div className="w-80">
+          <div className="w-96">
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5 ml-1">{t('reports_type')}</label>
             <CustomSelect 
               options={reportOptions}
@@ -712,9 +900,9 @@ const ReportsPage: React.FC = () => {
 
       <div className="print:hidden flex flex-col gap-3 rounded-2xl border border-warm-100 bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-4 text-sm">
-          <span className="flex items-center gap-2 font-bold text-gray-700"><Rows3 size={17} className="text-warm-500" /> Записів: {visibleData.length}</span>
+          <span className="flex items-center gap-2 font-bold text-gray-700"><Rows3 size={17} className="text-warm-500" /> Записів у звіті: {visibleData.length}</span>
           {searchQuery && visibleData.length !== data.length && <span className="text-gray-400">із {data.length}</span>}
-          <span className="rounded-lg bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-500">{isWideReport ? 'Альбомний друк' : 'Книжковий друк'}</span>
+          <span className="rounded-lg bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-500">{isWideReport ? 'Альбомний друк (A4 landscape)' : 'Книжковий друк (A4 portrait)'}</span>
         </div>
         <label className="relative block w-full lg:w-80">
           <span className="sr-only">Пошук у звіті</span>
@@ -734,19 +922,28 @@ const ReportsPage: React.FC = () => {
         </label>
       </div>
 
-      {/* Зона друку */}
+      {/* Зона друку державних форм */}
       <div className={`report-document bg-white p-8 rounded-[2.5rem] shadow-sm border border-warm-100 print:shadow-none print:border-none print:p-0 min-h-[70vh] ${isWideReport ? 'report-landscape' : 'report-portrait'}`}>
         <div className="report-header mb-6 border-b-2 border-gray-900 pb-5">
-          <div className="text-center">
-            <div className="text-sm font-black uppercase tracking-wide text-gray-800">{settings?.name || 'Заклад дошкільної освіти'}</div>
-            <div className="mt-1 text-xs text-gray-500">
-              ЄДРПОУ: {settings?.edrpou || '—'}{settings?.address ? ` · ${settings.address}` : ''}
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-sm font-black uppercase tracking-wide text-gray-900">{settings?.name || 'Заклад дошкільної освіти'}</div>
+              <div className="mt-0.5 text-xs text-gray-600">
+                Код ЄДРПОУ: <span className="font-bold text-gray-900">{settings?.edrpou || '—'}</span>{settings?.address ? ` · ${settings.address}` : ''}
+              </div>
             </div>
-            <h2 className="mx-auto mt-5 max-w-4xl text-2xl font-black leading-tight text-gray-900">{getReportTitle()}</h2>
+            <div className="text-right text-xs text-gray-800 font-bold border border-gray-400 p-2.5 rounded-lg bg-gray-50/50 print:border-black">
+              <div>ЗАТВЕРДЖУЮ</div>
+              <div className="mt-1 text-[11px] font-normal">Керівник ЗДО ___________________</div>
+              <div className="mt-1 text-[10px] text-gray-500 font-normal">«____» _______________ 20___ р.</div>
+            </div>
           </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500">
-            <span>{t('reports_generated_at')}: {generatedAt?.toLocaleString('uk-UA') || '—'}</span>
-            <span>Кількість записів: {visibleData.length}</span>
+          <div className="text-center mt-4">
+            <h2 className="mx-auto max-w-4xl text-xl font-black leading-tight text-gray-900 uppercase tracking-tight">{getReportTitle()}</h2>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-600 border-t border-gray-200 pt-2">
+            <span>{t('reports_generated_at')}: <strong>{generatedAt?.toLocaleString('uk-UA') || '—'}</strong></span>
+            <span>Кількість позицій у звіті: <strong>{visibleData.length}</strong></span>
           </div>
         </div>
         
@@ -754,19 +951,22 @@ const ReportsPage: React.FC = () => {
           {renderTable()}
         </div>
 
-        <div className="mt-12 hidden print:flex justify-between items-center border-t border-dashed border-gray-300 pt-8">
-           <div className="text-center w-48">
-              <div className="border-b border-gray-800 mb-1 h-8"></div>
-              <div className="text-[10px] font-bold uppercase">{t('reports_responsible_person')}</div>
-           </div>
-           <div className="text-center w-48">
-              <div className="border-b border-gray-800 mb-1 h-8"></div>
-              <div className="text-[10px] font-bold uppercase">{t('reports_head')}</div>
-           </div>
-           <div className="text-center w-48">
-              <div className="border-b border-gray-800 mb-1 h-8"></div>
-              <div className="text-[10px] font-bold uppercase">{t('reports_stamp')}</div>
-           </div>
+        <div className="mt-12 hidden print:grid grid-cols-3 gap-6 border-t border-gray-800 pt-8 text-xs text-gray-900">
+          <div className="text-center">
+            <div className="border-b border-gray-800 mb-1.5 h-7"></div>
+            <div className="font-bold uppercase text-[10px]">{t('reports_responsible_person')}</div>
+            <div className="text-[9px] text-gray-500">(підпис, ініціали, прізвище)</div>
+          </div>
+          <div className="text-center">
+            <div className="border-b border-gray-800 mb-1.5 h-7"></div>
+            <div className="font-bold uppercase text-[10px]">Головний бухгалтер</div>
+            <div className="text-[9px] text-gray-500">(підпис, ініціали, прізвище)</div>
+          </div>
+          <div className="text-center">
+            <div className="border-b border-gray-800 mb-1.5 h-7"></div>
+            <div className="font-bold uppercase text-[10px]">{t('reports_head')}</div>
+            <div className="text-[9px] text-gray-500">(підпис, ініціали, прізвище)</div>
+          </div>
         </div>
       </div>
 
@@ -775,18 +975,18 @@ const ReportsPage: React.FC = () => {
         .report-table-wrap tbody tr:nth-child(even) { background: #fafafa; }
         .report-table-wrap tbody tr:hover { background: #fff7ed; }
         @media print {
-          @page { size: ${isWideReport ? 'A4 landscape' : 'A4 portrait'}; margin: 12mm 10mm 15mm; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white !important; font-family: 'Montserrat', sans-serif; }
+          @page { size: ${isWideReport ? 'A4 landscape' : 'A4 portrait'}; margin: 10mm 8mm 12mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white !important; font-family: 'Times New Roman', Times, serif; }
           .print\\:hidden { display: none !important; }
-          .report-document { min-height: 0 !important; width: 100% !important; }
+          .report-document { min-height: 0 !important; width: 100% !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
           .report-header { break-after: avoid; page-break-after: avoid; }
           .report-table-wrap table { width: 100% !important; table-layout: auto; border-collapse: collapse; }
           .report-table-wrap thead { display: table-header-group; }
           .report-table-wrap tfoot { display: table-footer-group; }
           .report-table-wrap tr { break-inside: avoid; page-break-inside: avoid; }
-          .report-table-wrap th, .report-table-wrap td { padding: 5px 6px !important; border-color: #cbd5e1 !important; color: #111827 !important; font-size: ${isWideReport ? '8.5pt' : '9pt'} !important; }
-          .report-table-wrap thead th { position: static; background: #e5e7eb !important; }
-          .report-table-wrap tbody tr:nth-child(even) { background: #f8fafc !important; }
+          .report-table-wrap th, .report-table-wrap td { padding: 4px 5px !important; border: 1px solid #000 !important; color: #000 !important; font-size: ${isWideReport ? '8pt' : '8.5pt'} !important; }
+          .report-table-wrap thead th { position: static; background: #f3f4f6 !important; }
+          .report-table-wrap tbody tr:nth-child(even) { background: #fff !important; }
           .report-table-wrap td div { max-width: none !important; }
         }
       `}</style>
@@ -802,6 +1002,11 @@ const toInputDate = (date: Date) => {
 };
 
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString('uk-UA') : '—';
+
+const formatMoneyValue = (value?: number | null) =>
+  value === null || value === undefined
+    ? '0.00 грн'
+    : new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value)) + ' грн';
 
 const mealTypeLabels: Record<string, string> = {
   breakfast: 'Сніданок',
@@ -839,34 +1044,64 @@ const getExportRows = (reportType: ReportType, rows: ReportRow[]) => {
     })));
   }
 
-  return rows.map((row) => {
-  switch (reportType) {
-    case 'saldo':
-      return { 'Продукт': row.name, 'Одиниця': row.unit, 'Початковий залишок': Number(row.startStock || 0), 'Прихід': Number(row.incoming || 0), 'Видаток': Number(row.outgoing || 0), 'Кінцевий залишок': Number(row.endStock || 0) };
-    case 'children':
-      return { 'ПІБ дитини': row.fullName, 'Група': row.groupName || '—', 'Дата народження': formatDate(row.birthDate), 'Статус': row.status === 'active' ? 'Активна' : 'Архів' };
-    case 'sick':
-      return { 'ПІБ дитини': row.childName, 'Діагноз': row.diagnosis, 'Дата початку': formatDate(row.startDate), 'Прогноз': row.endDate ? formatDate(row.endDate) : 'Хворіє' };
-    case 'attendance':
-      return { 'ПІБ дитини': row.name, 'Всього днів': row.total, 'Присутній': row.present, 'Відсутній': row.absent, 'Відвідування, %': row.total ? Number(((row.present / row.total) * 100).toFixed(1)) : 0 };
-    case 'psychology':
-      return { 'Дитина': row.childName || 'Загальна', 'Тип роботи': row.type, 'Тема': row.topic, 'Результат / примітки': row.notes || '—', 'Дата': formatDate(row.date) };
-    case 'spent-products':
-      return { 'Найменування продукту': row.name, 'Використано': Number(row.totalQuantity || 0), 'Одиниця': row.unit, 'Загальна вартість, грн': Number(row.totalCost || 0) };
-    case 'spent-medications':
-      return { 'Препарат': row.medName, 'Кількість': row.quantity, 'Одиниця': row.unit, 'Для кого': row.childName || 'Загальне', 'Причина': row.reason || '—', 'Дата': formatDate(row.date) };
-    case 'utilities':
-      return { 'Лічильник': row.meterName, 'Локація': row.location || '—', 'Тип': row.utilityType, 'Одиниця': row.unit, 'Початкові показання': row.startReading ?? '—', 'Кінцеві показання': row.endReading ?? '—', 'Спожито': Number(row.consumption || 0), 'Тариф, грн': row.tariffPrice ?? '—', 'Сума, грн': Number(row.estimatedCost || 0) };
-    case 'audit':
-      return { 'Час': new Date(row.timestamp).toLocaleString('uk-UA'), 'Користувач': row.userFullName || row.username || 'Система', 'Дія': String(row.actionType).replace(/_/g, ' '), 'Сутність': row.entity, 'ID': row.entityId ?? '—', 'Деталі': formatAuditDetails(row), 'IP-адреса': row.ipAddress || '—' };
-    case 'medications':
-      return { 'Препарат': row.name, 'Залишок': Number(row.quantity || 0), 'Одиниця': row.unit, 'Термін придатності': formatDate(row.expiryDate), 'Примітки': row.notes || '—' };
-    case 'tmc':
-      return { 'Інвентарний №': row.inventoryNumber, 'Найменування': row.name, 'Дата надходження': formatDate(row.arrivalDate), 'Категорія': row.category || '—', 'Локація': row.location || row.outdoorArea || '—', 'Прив’язка': formatAssignmentLabel(row), 'Стан': formatInventoryStatus(row.status), 'Первісна вартість, грн': row.initialValue ?? '—' };
-    case 'menus':
-      return { 'Дата': formatDate(row.date), 'Діти 0–4': row.count0_4 ?? 0, 'Діти 5–7': row.count5_7 ?? 0, 'Співробітники': row.employeesCount ?? 0, 'Разом': (row.count0_4 ?? 0) + (row.count5_7 ?? 0) + (row.employeesCount ?? 0), 'Статус': row.status };
-    default:
-      return row;
+  return rows.map((row, index) => {
+    switch (reportType) {
+      case 'saldo':
+        return {
+          '№ з/п': index + 1,
+          'Продукт харчування': row.name,
+          'Од. вим.': row.unit,
+          'Ціна (грн)': row.price,
+          'Початковий залишок (к-сть)': Number(row.startStock || 0),
+          'Початковий залишок (сума грн)': Number(row.startCost || 0),
+          'Прихід (к-сть)': Number(row.incoming || 0),
+          'Прихід (сума грн)': Number(row.incomingCost || 0),
+          'Видаток (к-сть)': Number(row.outgoing || 0),
+          'Видаток (сума грн)': Number(row.outgoingCost || 0),
+          'Кінцевий залишок (к-сть)': Number(row.endStock || 0),
+          'Кінцевий залишок (сума грн)': Number(row.endCost || 0),
+        };
+      case 'tmc-saldo':
+        return {
+          '№ з/п': index + 1,
+          'Інв. №': row.inventoryNumber,
+          'Найменування майна / ТМЦ': row.name,
+          'Категорія': row.category,
+          'Прив’язка / Локація': row.placement,
+          'Ціна за 1 шт (грн)': row.unitPrice,
+          'Початковий залишок (к-сть)': row.startQty,
+          'Початковий залишок (сума грн)': row.startSum,
+          'Надходження (к-сть)': row.inQty,
+          'Надходження (сума грн)': row.inSum,
+          'Списання/Переміщення (к-сть)': row.outQty,
+          'Списання/Переміщення (сума грн)': row.outSum,
+          'Кінцевий залишок (к-сть)': row.endQty,
+          'Кінцевий залишок (сума грн)': row.endSum,
+        };
+      case 'children':
+        return { '№ з/п': index + 1, 'ПІБ дитини': row.fullName, 'Група': row.groupName || '—', 'Дата народження': formatDate(row.birthDate), 'Статус': row.status === 'active' ? 'Активна' : 'Архів' };
+      case 'sick':
+        return { '№ з/п': index + 1, 'ПІБ дитини': row.childName, 'Діагноз': row.diagnosis, 'Дата початку': formatDate(row.startDate), 'Прогноз': row.endDate ? formatDate(row.endDate) : 'Хворіє' };
+      case 'attendance':
+        return { '№ з/п': index + 1, 'ПІБ дитини': row.name, 'Всього днів': row.total, 'Присутній': row.present, 'Відсутній': row.absent, 'Відвідування, %': row.total ? Number(((row.present / row.total) * 100).toFixed(1)) : 0 };
+      case 'psychology':
+        return { '№ з/п': index + 1, 'Дитина': row.childName || 'Загальна', 'Тип роботи': row.type, 'Тема': row.topic, 'Результат / примітки': row.notes || '—', 'Дата': formatDate(row.date) };
+      case 'spent-products':
+        return { '№ з/п': index + 1, 'Найменування продукту': row.name, 'Використано': Number(row.totalQuantity || 0), 'Одиниця': row.unit, 'Загальна вартість, грн': Number(row.totalCost || 0) };
+      case 'spent-medications':
+        return { '№ з/п': index + 1, 'Препарат': row.medName, 'Кількість': row.quantity, 'Одиниця': row.unit, 'Для кого': row.childName || 'Загальне', 'Причина': row.reason || '—', 'Дата': formatDate(row.date) };
+      case 'utilities':
+        return { '№ з/п': index + 1, 'Лічильник': row.meterName, 'Локація': row.location || '—', 'Тип': row.utilityType, 'Одиниця': row.unit, 'Початкові показання': row.startReading ?? '—', 'Кінцеві показання': row.endReading ?? '—', 'Спожито': Number(row.consumption || 0), 'Тариф, грн': row.tariffPrice ?? '—', 'Сума, грн': Number(row.estimatedCost || 0) };
+      case 'audit':
+        return { '№ з/п': index + 1, 'Час': new Date(row.timestamp).toLocaleString('uk-UA'), 'Користувач': row.userFullName || row.username || 'Система', 'Дія': String(row.actionType).replace(/_/g, ' '), 'Сутність': row.entity, 'ID': row.entityId ?? '—', 'Деталі': formatAuditDetails(row), 'IP-адреса': row.ipAddress || '—' };
+      case 'medications':
+        return { '№ з/п': index + 1, 'Препарат': row.name, 'Залишок': Number(row.quantity || 0), 'Одиниця': row.unit, 'Термін придатності': formatDate(row.expiryDate), 'Примітки': row.notes || '—' };
+      case 'tmc':
+        return { '№ з/п': index + 1, 'Інвентарний №': row.inventoryNumber, 'Найменування': row.name, 'Дата надходження': formatDate(row.arrivalDate), 'Категорія': row.category || '—', 'Локація': row.location || row.outdoorArea || '—', 'Прив’язка': formatAssignmentLabel(row), 'Стан': formatInventoryStatus(row.status), 'Первісна вартість, грн': row.initialValue ?? '—' };
+      case 'menus':
+        return { '№ з/п': index + 1, 'Дата': formatDate(row.date), 'Діти 0–4': row.count0_4 ?? 0, 'Діти 5–7': row.count5_7 ?? 0, 'Співробітники': row.employeesCount ?? 0, 'Разом': (row.count0_4 ?? 0) + (row.count5_7 ?? 0) + (row.employeesCount ?? 0), 'Статус': row.status };
+      default:
+        return row;
     }
   });
 };
